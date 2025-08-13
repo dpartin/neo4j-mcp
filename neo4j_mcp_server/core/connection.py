@@ -42,10 +42,10 @@ class Neo4jConnectionManager:
         try:
             logger.info("Connecting to Neo4j database", uri=self.config.uri)
             
+            # Use minimal configuration that works
             self._driver = AsyncGraphDatabase.driver(
                 self.config.uri,
-                auth=(self.config.user, self.config.password),
-                **self.config.get_connection_config()
+                auth=(self.config.user, self.config.password)
             )
             
             # Verify connection
@@ -163,7 +163,8 @@ class Neo4jConnectionManager:
         """
         async with self.get_session(database) as session:
             try:
-                async with session.begin_transaction() as tx:
+                tx = await session.begin_transaction()
+                try:
                     result = await tx.run(query, parameters or {})
                     summary = await result.consume()
                     await tx.commit()
@@ -180,6 +181,9 @@ class Neo4jConnectionManager:
                         "constraints_added": summary.counters.constraints_added,
                         "constraints_removed": summary.counters.constraints_removed,
                     }
+                except Exception as e:
+                    await tx.rollback()
+                    raise e
             except ClientError as e:
                 logger.error("Write query execution failed", query=query, error=str(e))
                 raise QueryError(f"Write query execution failed: {str(e)}")

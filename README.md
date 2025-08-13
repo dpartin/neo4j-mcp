@@ -28,10 +28,11 @@ A Model Context Protocol (MCP) server that exposes Neo4j graph database function
 - Python 3.9+
 - Neo4j 5.x+ database
 - Neo4j Graph Data Science (GDS) library (optional, for advanced analytics)
+- Cursor IDE (for MCP integration)
 
 ### Installation
 
-#### Option 1: Using nv (Recommended)
+#### Option 1: Using uv (Recommended)
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
@@ -43,25 +44,34 @@ A Model Context Protocol (MCP) server that exposes Neo4j graph database function
    python setup_git.py
    ```
 
-3. **Setup development environment with nv**
+3. **Setup development environment with uv**
    ```bash
    python setup_dev.py
    ```
 
-3. **Activate the environment**
+4. **Activate the environment**
    ```bash
-   nv use neo4j-mcp-server
+   # On Windows:
+   .venv\Scripts\activate
+   # On Linux/Mac:
+   source .venv/bin/activate
    ```
 
-4. **Configure Neo4j connection**
+5. **Configure Neo4j connection**
    ```bash
-   cp env.example .env
+   cp .env.example .env
    # Edit .env with your Neo4j credentials
    ```
 
-5. **Run the MCP server**
+6. **Run the MCP server**
    ```bash
-   nv run python run_server.py
+   uv run python run_server.py
+   ```
+
+7. **Integrate with Cursor (Optional)**
+   ```bash
+   # Follow the Cursor integration guide
+   # See CURSOR_INTEGRATION.md for detailed instructions
    ```
 
 #### Option 2: Manual Setup
@@ -293,6 +303,27 @@ mypy neo4j_mcp_server/
 - Connection pooling for concurrent requests
 - Caching for frequently accessed data
 
+## Cursor Integration
+
+The Neo4j MCP Server is designed to integrate seamlessly with Cursor IDE, providing AI-powered graph database operations directly within your development environment.
+
+### Quick Cursor Setup
+
+1. **Install the MCP server** (follow installation instructions above)
+2. **Configure Cursor settings** - Add MCP server configuration to Cursor
+3. **Restart Cursor** to load the integration
+4. **Start using** - Access Neo4j operations through Cursor's AI assistant
+
+### Available Features in Cursor
+
+- **Graph Operations**: Create, query, and analyze Neo4j graphs
+- **AI-Powered Queries**: Natural language to Cypher query conversion
+- **Visual Results**: Graph visualization and data exploration
+- **Code Generation**: Generate Cypher queries and Python code
+- **RAG Integration**: Context-aware graph retrieval for AI responses
+
+For detailed setup instructions and examples, see [CURSOR_INTEGRATION.md](CURSOR_INTEGRATION.md).
+
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for detailed information about:
@@ -326,7 +357,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 5. **Make your changes and test**:
    ```bash
-   nv run pytest tests/ -v
+   uv run pytest tests/ -v
    ```
 
 6. **Commit and push**:

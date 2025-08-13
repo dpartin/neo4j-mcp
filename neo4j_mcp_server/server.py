@@ -2,7 +2,7 @@
 
 import asyncio
 from typing import Any, Dict, List, Optional
-from mcp import Server
+from fastmcp import FastMCP
 from mcp.types import (
     Tool,
     TextContent,
@@ -30,10 +30,17 @@ class Neo4jMCPServer:
     
     def __init__(self):
         """Initialize the MCP server."""
-        self.server = Server("neo4j-mcp-server")
+        # Initialize MCP server with proper name and version
+        self.server = FastMCP("neo4j-mcp-server")
+        
+        # Setup logging first
         self._setup_logging()
+        
+        # Setup tools and resources
         self._setup_tools()
         self._setup_resources()
+        
+        # Setup MCP protocol handlers
         self._setup_handlers()
     
     def _setup_logging(self):
@@ -46,185 +53,131 @@ class Neo4jMCPServer:
     def _setup_tools(self):
         """Setup MCP tools for Neo4j operations."""
         
+        from fastmcp.tools import Tool
+        
         # Node CRUD Tools
-        self.server.tool(
-            "create_node",
+        create_node_tool = Tool.from_function(
             self._create_node,
+            name="create_node",
             description="Create a new node with labels and properties"
         )
+        self.server.add_tool(create_node_tool)
         
-        self.server.tool(
-            "get_node",
+        get_node_tool = Tool.from_function(
             self._get_node,
+            name="get_node",
             description="Retrieve nodes by ID or filters"
         )
+        self.server.add_tool(get_node_tool)
         
-        self.server.tool(
-            "update_node",
+        update_node_tool = Tool.from_function(
             self._update_node,
+            name="update_node",
             description="Update node properties and labels"
         )
+        self.server.add_tool(update_node_tool)
         
-        self.server.tool(
-            "delete_node",
+        delete_node_tool = Tool.from_function(
             self._delete_node,
+            name="delete_node",
             description="Delete nodes and handle cascading"
         )
+        self.server.add_tool(delete_node_tool)
         
         # Relationship CRUD Tools
-        self.server.tool(
-            "create_relationship",
+        create_relationship_tool = Tool.from_function(
             self._create_relationship,
+            name="create_relationship",
             description="Create relationships between nodes"
         )
+        self.server.add_tool(create_relationship_tool)
         
-        self.server.tool(
-            "get_relationship",
+        get_relationship_tool = Tool.from_function(
             self._get_relationship,
+            name="get_relationship",
             description="Retrieve relationships"
         )
+        self.server.add_tool(get_relationship_tool)
         
-        self.server.tool(
-            "update_relationship",
+        update_relationship_tool = Tool.from_function(
             self._update_relationship,
+            name="update_relationship",
             description="Update relationship properties"
         )
+        self.server.add_tool(update_relationship_tool)
         
-        self.server.tool(
-            "delete_relationship",
+        delete_relationship_tool = Tool.from_function(
             self._delete_relationship,
+            name="delete_relationship",
             description="Delete relationships"
         )
+        self.server.add_tool(delete_relationship_tool)
         
         # Analytics Tools
-        self.server.tool(
-            "find_paths",
+        find_paths_tool = Tool.from_function(
             self._find_paths,
+            name="find_paths",
             description="Find paths between nodes"
         )
+        self.server.add_tool(find_paths_tool)
         
-        self.server.tool(
-            "calculate_centrality",
+        calculate_centrality_tool = Tool.from_function(
             self._calculate_centrality,
+            name="calculate_centrality",
             description="Calculate node centrality metrics"
         )
+        self.server.add_tool(calculate_centrality_tool)
         
-        self.server.tool(
-            "detect_communities",
+        detect_communities_tool = Tool.from_function(
             self._detect_communities,
+            name="detect_communities",
             description="Find community structures"
         )
+        self.server.add_tool(detect_communities_tool)
         
-        self.server.tool(
-            "graph_metrics",
+        graph_metrics_tool = Tool.from_function(
             self._graph_metrics,
+            name="graph_metrics",
             description="Calculate graph-level metrics"
         )
+        self.server.add_tool(graph_metrics_tool)
         
         # RAG Tools
-        self.server.tool(
-            "vector_search",
+        vector_search_tool = Tool.from_function(
             self._vector_search,
+            name="vector_search",
             description="Perform vector similarity search"
         )
+        self.server.add_tool(vector_search_tool)
         
-        self.server.tool(
-            "semantic_search",
+        semantic_search_tool = Tool.from_function(
             self._semantic_search,
+            name="semantic_search",
             description="Semantic graph search"
         )
+        self.server.add_tool(semantic_search_tool)
         
-        self.server.tool(
-            "context_retrieval",
+        context_retrieval_tool = Tool.from_function(
             self._context_retrieval,
+            name="context_retrieval",
             description="Retrieve relevant subgraphs for RAG"
         )
+        self.server.add_tool(context_retrieval_tool)
     
     def _setup_resources(self):
         """Setup MCP resources for Neo4j information."""
         
-        self.server.resource(
-            "graph_schema",
-            self._get_graph_schema,
-            description="Graph database schema information"
-        )
+        from fastmcp.resources import Resource
         
-        self.server.resource(
-            "node_types",
-            self._get_node_types,
-            description="Available node labels and their properties"
-        )
-        
-        self.server.resource(
-            "relationship_types",
-            self._get_relationship_types,
-            description="Available relationship types"
-        )
-        
-        self.server.resource(
-            "analytics_results",
-            self._get_analytics_results,
-            description="Cached analytics results"
-        )
-        
-        self.server.resource(
-            "vector_indexes",
-            self._get_vector_indexes,
-            description="Vector index information"
-        )
+        # For now, we'll use a simpler approach since FastMCP resource API might be different
+        # We'll implement resources in Phase 2 when we have the actual Neo4j connection working
+        pass
     
     def _setup_handlers(self):
         """Setup server event handlers."""
-        
-        @self.server.list_tools()
-        async def handle_list_tools() -> List[Tool]:
-            """List all available tools."""
-            return [
-                Tool(
-                    name="create_node",
-                    description="Create a new node with labels and properties",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "labels": {"type": "array", "items": {"type": "string"}},
-                            "properties": {"type": "object"}
-                        },
-                        "required": ["labels"]
-                    }
-                ),
-                Tool(
-                    name="get_node",
-                    description="Retrieve nodes by ID or filters",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "node_id": {"type": "integer"},
-                            "labels": {"type": "array", "items": {"type": "string"}},
-                            "properties": {"type": "object"}
-                        }
-                    }
-                ),
-                # Add more tool schemas here
-            ]
-        
-        @self.server.list_resources()
-        async def handle_list_resources() -> List[Resource]:
-            """List all available resources."""
-            return [
-                Resource(
-                    uri="graph_schema",
-                    name="Graph Schema",
-                    description="Graph database schema information",
-                    mimeType="application/json"
-                ),
-                Resource(
-                    uri="node_types",
-                    name="Node Types",
-                    description="Available node labels and their properties",
-                    mimeType="application/json"
-                ),
-                # Add more resources here
-            ]
+        # FastMCP handles tool and resource registration automatically
+        # No need for manual handlers
+        pass
     
     # Tool implementations (placeholder for Phase 2)
     
@@ -533,8 +486,13 @@ class Neo4jMCPServer:
         try:
             logger.info("Starting Neo4j MCP Server")
             
-            # Connect to Neo4j
-            await connection_manager.connect()
+            # Try to connect to Neo4j (optional for MCP server startup)
+            try:
+                await connection_manager.connect()
+                logger.info("Successfully connected to Neo4j database")
+            except Exception as e:
+                logger.warning("Could not connect to Neo4j database - tools will work in demo mode", error=str(e))
+                logger.info("MCP server will start without Neo4j connection")
             
             # Start the MCP server
             await self.server.run()

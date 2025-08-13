@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Development setup script for Neo4j MCP Server using nv for environment management.
+Development setup script for Neo4j MCP Server using uv for environment management.
 """
 
 import os
@@ -22,12 +22,12 @@ def run_command(command, description):
         return False
 
 
-def check_nv_installed():
-    """Check if nv is installed and available."""
+def check_uv_installed():
+    """Check if uv is installed and available."""
     try:
-        result = subprocess.run(["nv", "--version"], capture_output=True, text=True)
+        result = subprocess.run(["uv", "--version"], capture_output=True, text=True)
         if result.returncode == 0:
-            print(f"✓ nv detected: {result.stdout.strip()}")
+            print(f"✓ uv detected: {result.stdout.strip()}")
             return True
         else:
             return False
@@ -58,13 +58,13 @@ def create_env_file():
 
 def main():
     """Main setup function."""
-    print("Setting up Neo4j MCP Server development environment with nv...")
+    print("Setting up Neo4j MCP Server development environment with uv...")
     print("=" * 60)
     
-    # Check if nv is installed
-    if not check_nv_installed():
-        print("✗ nv is not installed or not available in PATH")
-        print("Please install nv first: https://github.com/jcouture/nv")
+    # Check if uv is installed
+    if not check_uv_installed():
+        print("✗ uv is not installed or not available in PATH")
+        print("Please install uv first: https://github.com/astral-sh/uv")
         sys.exit(1)
     
     # Check Python version
@@ -75,33 +75,14 @@ def main():
     else:
         print(f"✓ Python {python_version.major}.{python_version.minor}.{python_version.micro} detected")
     
-    # Create or activate nv environment
-    project_name = "neo4j-mcp-server"
-    print(f"Setting up nv environment: {project_name}")
-    
-    # Check if environment already exists
-    try:
-        result = subprocess.run(["nv", "list"], capture_output=True, text=True)
-        if project_name in result.stdout:
-            print(f"✓ nv environment '{project_name}' already exists")
-            if not run_command(f"nv use {project_name}", f"Activating existing environment '{project_name}'"):
-                sys.exit(1)
-        else:
-            print(f"Creating new nv environment: {project_name}")
-            if not run_command(f"nv create {project_name}", f"Creating nv environment '{project_name}'"):
-                sys.exit(1)
-            if not run_command(f"nv use {project_name}", f"Activating nv environment '{project_name}'"):
-                sys.exit(1)
-    except Exception as e:
-        print(f"✗ Failed to manage nv environment: {e}")
+    # Create virtual environment using uv
+    print("Creating virtual environment with uv...")
+    if not run_command("uv venv", "Creating virtual environment"):
         sys.exit(1)
     
-    # Install dependencies using nv
+    # Install dependencies using uv
     print("Installing dependencies...")
-    if not run_command("nv pip install --upgrade pip", "Upgrading pip"):
-        sys.exit(1)
-    
-    if not run_command("nv pip install -r requirements.txt", "Installing requirements"):
+    if not run_command("uv pip install -r requirements.txt", "Installing requirements"):
         sys.exit(1)
     
     # Create .env file
@@ -109,22 +90,22 @@ def main():
     
     # Run tests
     print("Running tests...")
-    if not run_command("nv pip install pytest pytest-cov", "Installing test dependencies"):
+    if not run_command("uv pip install pytest pytest-cov", "Installing test dependencies"):
         print("⚠️  Test dependencies installation failed, continuing...")
     
-    if run_command("nv run pytest tests/ -v", "Running tests"):
+    if run_command("uv run pytest tests/ -v", "Running tests"):
         print("✓ All tests passed")
     else:
         print("⚠️  Some tests failed, but setup completed")
     
     print("\n" + "=" * 60)
-    print("🎉 Development environment setup completed with nv!")
+    print("🎉 Development environment setup completed with uv!")
     print("\nNext steps:")
-    print("1. Activate the environment: nv use neo4j-mcp-server")
+    print("1. Activate the environment: source .venv/bin/activate (Linux/Mac) or .venv\\Scripts\\activate (Windows)")
     print("2. Update .env file with your Neo4j credentials")
     print("3. Start Neo4j database")
-    print("4. Run the server: nv run python run_server.py")
-    print("5. Run tests: nv run pytest tests/ -v")
+    print("4. Run the server: uv run python run_server.py")
+    print("5. Run tests: uv run pytest tests/ -v")
     print("\nFor more information, see README.md and TRD_Neo4j_MCP_Server.md")
 
 
