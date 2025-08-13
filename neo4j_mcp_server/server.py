@@ -163,6 +163,14 @@ class Neo4jMCPServer:
             description="Retrieve relevant subgraphs for RAG"
         )
         self.server.add_tool(context_retrieval_tool)
+        
+        # Query execution tool
+        execute_query_tool = Tool.from_function(
+            self._execute_query,
+            name="execute_query",
+            description="Execute a Cypher query and return results"
+        )
+        self.server.add_tool(execute_query_tool)
     
     def _setup_resources(self):
         """Setup MCP resources for Neo4j information."""
@@ -184,13 +192,26 @@ class Neo4jMCPServer:
     async def _create_node(self, labels: List[str], properties: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Create a new node."""
         try:
-            # Placeholder implementation - will be implemented in Phase 2
             logger.info("Creating node", labels=labels, properties=properties)
+            
+            # Build Cypher query
+            label_string = ":".join(labels) if labels else ""
+            properties = properties or {}
+            
+            if label_string:
+                query = f"CREATE (n:{label_string} $properties) RETURN n"
+            else:
+                query = "CREATE (n $properties) RETURN n"
+            
+            # Execute query
+            result = await connection_manager.execute_write_query(query, {"properties": properties})
+            
             return {
                 "success": True,
-                "message": "Node creation placeholder - implement in Phase 2",
+                "message": f"Node created successfully with labels: {labels}",
                 "labels": labels,
-                "properties": properties or {}
+                "properties": properties,
+                "result": result
             }
         except Exception as e:
             logger.error("Error creating node", error=str(e))
@@ -199,14 +220,48 @@ class Neo4jMCPServer:
     async def _get_node(self, node_id: Optional[int] = None, labels: Optional[List[str]] = None, properties: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Get nodes by criteria."""
         try:
-            # Placeholder implementation
             logger.info("Getting node", node_id=node_id, labels=labels, properties=properties)
+            
+            # Build Cypher query based on criteria
+            if node_id is not None:
+                query = "MATCH (n) WHERE id(n) = $node_id RETURN n"
+                parameters = {"node_id": node_id}
+            elif labels:
+                label_string = ":".join(labels)
+                if properties:
+                    # Build property conditions
+                    prop_conditions = []
+                    for key, value in properties.items():
+                        prop_conditions.append(f"n.{key} = ${key}")
+                    conditions = " AND ".join(prop_conditions)
+                    query = f"MATCH (n:{label_string}) WHERE {conditions} RETURN n"
+                    parameters = properties
+                else:
+                    query = f"MATCH (n:{label_string}) RETURN n"
+                    parameters = {}
+            elif properties:
+                # Build property conditions
+                prop_conditions = []
+                for key, value in properties.items():
+                    prop_conditions.append(f"n.{key} = ${key}")
+                conditions = " AND ".join(prop_conditions)
+                query = f"MATCH (n) WHERE {conditions} RETURN n"
+                parameters = properties
+            else:
+                # Get all nodes
+                query = "MATCH (n) RETURN n LIMIT 100"
+                parameters = {}
+            
+            # Execute query
+            result = await connection_manager.execute_query(query, parameters)
+            
             return {
                 "success": True,
-                "message": "Node retrieval placeholder - implement in Phase 2",
+                "message": f"Retrieved nodes successfully",
                 "node_id": node_id,
                 "labels": labels,
-                "properties": properties
+                "properties": properties,
+                "result": result
             }
         except Exception as e:
             logger.error("Error getting node", error=str(e))
@@ -246,15 +301,34 @@ class Neo4jMCPServer:
     async def _create_relationship(self, from_node_id: int, to_node_id: int, relationship_type: str, properties: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Create a relationship."""
         try:
-            # Placeholder implementation
             logger.info("Creating relationship", from_node_id=from_node_id, to_node_id=to_node_id, type=relationship_type, properties=properties)
+            
+            # Build Cypher query
+            properties = properties or {}
+            properties_param = {"properties": properties}
+            
+            query = f"""
+            MATCH (a), (b)
+            WHERE id(a) = $from_node_id AND id(b) = $to_node_id
+            CREATE (a)-[r:{relationship_type} $properties]->(b)
+            RETURN r
+            """
+            
+            # Execute query
+            result = await connection_manager.execute_write_query(query, {
+                "from_node_id": from_node_id,
+                "to_node_id": to_node_id,
+                **properties_param
+            })
+            
             return {
                 "success": True,
-                "message": "Relationship creation placeholder - implement in Phase 2",
+                "message": f"Relationship created successfully: {relationship_type}",
                 "from_node_id": from_node_id,
                 "to_node_id": to_node_id,
                 "type": relationship_type,
-                "properties": properties or {}
+                "properties": properties,
+                "result": result
             }
         except Exception as e:
             logger.error("Error creating relationship", error=str(e))
@@ -414,6 +488,32 @@ class Neo4jMCPServer:
             logger.error("Error retrieving context", error=str(e))
             raise Neo4jMCPError(f"Failed to retrieve context: {str(e)}")
     
+    async def _execute_query(self, query: str, parameters: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Execute a Cypher query and return results."""
+        try:
+            logger.info("Executing query", query=query, parameters=parameters)
+            
+            # Determine if this is a write query
+            write_keywords = ["CREATE", "DELETE", "SET", "REMOVE", "MERGE", "DETACH DELETE"]
+            is_write_query = any(keyword in query.upper() for keyword in write_keywords)
+            
+            if is_write_query:
+                result = await connection_manager.execute_write_query(query, parameters or {})
+            else:
+                result = await connection_manager.execute_query(query, parameters or {})
+            
+            return {
+                "success": True,
+                "message": f"Query executed successfully ({'write' if is_write_query else 'read'})",
+                "query": query,
+                "parameters": parameters or {},
+                "result": result,
+                "query_type": "write" if is_write_query else "read"
+            }
+        except Exception as e:
+            logger.error("Error executing query", error=str(e))
+            raise Neo4jMCPError(f"Failed to execute query: {str(e)}")
+    
     # Resource implementations (placeholder)
     
     async def _get_graph_schema(self) -> Dict[str, Any]:
@@ -501,6 +601,8 @@ class Neo4jMCPServer:
             logger.error("Failed to start MCP server", error=str(e))
             raise
     
+
+    
     async def stop(self):
         """Stop the MCP server."""
         try:
@@ -528,5 +630,16 @@ async def main():
         await server.stop()
 
 
+def main_sync():
+    """Synchronous main entry point for the MCP server."""
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nServer stopped by user")
+    except Exception as e:
+        print(f"Error running server: {e}")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main_sync()
