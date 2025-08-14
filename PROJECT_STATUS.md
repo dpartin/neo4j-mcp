@@ -12,6 +12,8 @@ The Neo4j MCP Server is now a production-ready implementation with comprehensive
 - ✅ **Real Database Connection**: Proven connection logic with robust error handling
 - ✅ **Data Formatting**: Properly formatted results with actual data display
 - ✅ **Environment Management**: Secure configuration via .env files
+- ✅ **Advanced Analytics**: Graph analytics including centrality, community detection, and path analysis
+- ✅ **RAG Support**: Retrieval-Augmented Generation with vector search and semantic similarity
 
 ### Technical Implementation
 - ✅ **FastMCP 2.0**: Built with latest FastMCP framework
@@ -66,6 +68,17 @@ neo4j_mcp/
 - `get_node(node_id: Optional[int], labels: Optional[List[str]], properties: Optional[Dict])` - Get nodes by criteria
 - `update_node(node_id: int, properties: Optional[Dict], labels: Optional[List[str]])` - Update a node
 - `delete_node(node_id: int, cascade: bool)` - Delete a node
+
+### Advanced Analytics
+- `graph_analytics(analysis_type: str, node_label: Optional[str], relationship_type: Optional[str])` - Perform graph analytics
+- `graph_statistics()` - Get comprehensive graph statistics
+
+### RAG (Retrieval-Augmented Generation)
+- `create_vector_index(index_name: str, node_label: str, property_name: str, dimensions: int)` - Create vector index
+- `semantic_search(query_vector: List[float], index_name: str, limit: int)` - Semantic search
+- `hybrid_search(text_query: str, node_label: str, vector_property: str, text_properties: List[str], limit: int)` - Hybrid search
+- `create_embedding_node(node_label: str, name: str, description: str, embedding: List[float])` - Create embedding nodes
+- `rag_context_retrieval(query: str, node_label: str, context_properties: List[str], limit: int)` - RAG context retrieval
 
 ## 🧪 Testing Status
 

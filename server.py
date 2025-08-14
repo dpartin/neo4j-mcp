@@ -307,6 +307,333 @@ def delete_node(node_id: int, cascade: bool = False) -> str:
         logger.error(f"Exception in delete_node: {e}")
         return f"❌ Error deleting node: {str(e)}"
 
+# ============================================================================
+# ADVANCED ANALYTICS FUNCTIONS
+# ============================================================================
+
+@mcp.tool
+def graph_analytics(analysis_type: str, node_label: Optional[str] = None, relationship_type: Optional[str] = None) -> str:
+    """Perform advanced graph analytics on the Neo4j database."""
+    logger.info(f"Graph analytics tool called with type: {analysis_type}, label: {node_label}, relationship: {relationship_type}")
+    
+    try:
+        if analysis_type == "degree_centrality":
+            if node_label:
+                query = f"""
+                MATCH (n:{node_label})
+                OPTIONAL MATCH (n)-[r]-()
+                RETURN n.name as node, size(collect(r)) as degree
+                ORDER BY degree DESC
+                LIMIT 10
+                """
+            else:
+                query = """
+                MATCH (n)
+                OPTIONAL MATCH (n)-[r]-()
+                RETURN labels(n)[0] as label, n.name as node, size(collect(r)) as degree
+                ORDER BY degree DESC
+                LIMIT 10
+                """
+        
+        elif analysis_type == "betweenness_centrality":
+            query = """
+            MATCH (n)
+            OPTIONAL MATCH path = shortestPath((start)-[*]-(end))
+            WHERE start <> end AND n IN nodes(path)
+            RETURN n.name as node, count(path) as betweenness
+            ORDER BY betweenness DESC
+            LIMIT 10
+            """
+        
+        elif analysis_type == "community_detection":
+            query = """
+            CALL gds.louvain.stream('myGraph')
+            YIELD nodeId, communityId
+            RETURN gds.util.asNode(nodeId).name as node, communityId
+            ORDER BY communityId
+            """
+        
+        elif analysis_type == "path_analysis":
+            if relationship_type:
+                query = f"""
+                MATCH path = (start)-[:{relationship_type}*1..5]-(end)
+                WHERE start <> end
+                RETURN start.name as start_node, end.name as end_node, length(path) as path_length
+                ORDER BY path_length
+                LIMIT 10
+                """
+            else:
+                query = """
+                MATCH path = (start)-[*1..5]-(end)
+                WHERE start <> end
+                RETURN start.name as start_node, end_node.name as end_node, length(path) as path_length
+                ORDER BY path_length
+                LIMIT 10
+                """
+        
+        elif analysis_type == "node_similarity":
+            query = """
+            MATCH (n1), (n2)
+            WHERE n1 <> n2
+            WITH n1, n2, size([(n1)-[:SIMILAR_GENRE]-(n2) | 1]) as similarity
+            WHERE similarity > 0
+            RETURN n1.name as node1, n2.name as node2, similarity
+            ORDER BY similarity DESC
+            LIMIT 10
+            """
+        
+        else:
+            return f"❌ Unknown analysis type: {analysis_type}. Available types: degree_centrality, betweenness_centrality, community_detection, path_analysis, node_similarity"
+        
+        result = execute_neo4j_query(query)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            # Format the results for display
+            formatted_results = []
+            for i, record in enumerate(result, 1):
+                formatted_results.append(f"Result {i}:\n{format_neo4j_result(record)}")
+            
+            return f"✅ {analysis_type.replace('_', ' ').title()} Analysis Results ({len(result)} results):\n\n" + "\n\n".join(formatted_results)
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to perform {analysis_type} analysis: {error_msg}"
+    
+    except Exception as e:
+        logger.error(f"Exception in graph_analytics: {e}")
+        return f"❌ Error performing graph analytics: {str(e)}"
+
+@mcp.tool
+def graph_statistics() -> str:
+    """Get comprehensive statistics about the graph database."""
+    logger.info("Graph statistics tool called")
+    
+    try:
+        queries = {
+            "node_count": "MATCH (n) RETURN count(n) as total_nodes",
+            "relationship_count": "MATCH ()-[r]->() RETURN count(r) as total_relationships",
+            "node_labels": "MATCH (n) RETURN labels(n) as labels, count(n) as count ORDER BY count DESC",
+            "relationship_types": "MATCH ()-[r]->() RETURN type(r) as type, count(r) as count ORDER BY count DESC",
+            "avg_degree": "MATCH (n) OPTIONAL MATCH (n)-[r]-() RETURN avg(size(collect(r))) as avg_degree",
+            "density": """
+            MATCH (n)
+            MATCH ()-[r]->()
+            RETURN toFloat(count(r)) / (count(n) * (count(n) - 1)) as density
+            """
+        }
+        
+        results = {}
+        for stat_name, query in queries.items():
+            result = execute_neo4j_query(query)
+            if result and len(result) > 0 and "error" not in result[0]:
+                results[stat_name] = result[0]
+            else:
+                results[stat_name] = {"error": "Failed to compute"}
+        
+        # Format the statistics
+        formatted_stats = []
+        for stat_name, result in results.items():
+            if "error" not in result:
+                formatted_stats.append(f"{stat_name.replace('_', ' ').title()}: {format_neo4j_result(result)}")
+            else:
+                formatted_stats.append(f"{stat_name.replace('_', ' ').title()}: {result['error']}")
+        
+        return f"✅ Graph Statistics:\n\n" + "\n".join(formatted_stats)
+    
+    except Exception as e:
+        logger.error(f"Exception in graph_statistics: {e}")
+        return f"❌ Error getting graph statistics: {str(e)}"
+
+# ============================================================================
+# RAG (RETRIEVAL-AUGMENTED GENERATION) FUNCTIONS
+# ============================================================================
+
+@mcp.tool
+def create_vector_index(index_name: str, node_label: str, property_name: str, dimensions: int = 1536) -> str:
+    """Create a vector index for RAG operations."""
+    logger.info(f"Create vector index tool called with name: {index_name}, label: {node_label}, property: {property_name}")
+    
+    try:
+        # Check if Neo4j Graph Data Science library is available
+        check_query = "CALL dbms.procedures() YIELD name WHERE name CONTAINS 'gds' RETURN count(name) as gds_available"
+        check_result = execute_neo4j_query(check_query)
+        
+        if not check_result or "error" in check_result[0] or check_result[0].get("gds_available", 0) == 0:
+            return "❌ Neo4j Graph Data Science library not available. Please install GDS library for vector operations."
+        
+        # Create vector index
+        query = f"""
+        CALL db.index.vector.createNodeIndex(
+            '{index_name}',
+            '{node_label}',
+            '{property_name}',
+            {dimensions},
+            'cosine'
+        )
+        """
+        
+        result = execute_neo4j_query(query)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            return f"✅ Vector index '{index_name}' created successfully for {node_label}.{property_name}"
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to create vector index: {error_msg}"
+    
+    except Exception as e:
+        logger.error(f"Exception in create_vector_index: {e}")
+        return f"❌ Error creating vector index: {str(e)}"
+
+@mcp.tool
+def semantic_search(query_vector: List[float], index_name: str, limit: int = 5) -> str:
+    """Perform semantic search using vector similarity."""
+    logger.info(f"Semantic search tool called with index: {index_name}, limit: {limit}")
+    
+    try:
+        # Convert query vector to string format for Cypher
+        vector_str = "[" + ", ".join(map(str, query_vector)) + "]"
+        
+        query = f"""
+        CALL db.index.vector.queryNodes('{index_name}', {limit}, {vector_str})
+        YIELD node, score
+        RETURN node.name as name, node.description as description, score
+        ORDER BY score DESC
+        """
+        
+        result = execute_neo4j_query(query)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            # Format the results for display
+            formatted_results = []
+            for i, record in enumerate(result, 1):
+                formatted_results.append(f"Result {i}:\n{format_neo4j_result(record)}")
+            
+            return f"✅ Semantic Search Results ({len(result)} results):\n\n" + "\n\n".join(formatted_results)
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to perform semantic search: {error_msg}"
+    
+    except Exception as e:
+        logger.error(f"Exception in semantic_search: {e}")
+        return f"❌ Error performing semantic search: {str(e)}"
+
+@mcp.tool
+def hybrid_search(text_query: str, node_label: str, vector_property: str, text_properties: List[str], limit: int = 5) -> str:
+    """Perform hybrid search combining text and vector similarity."""
+    logger.info(f"Hybrid search tool called with query: {text_query}, label: {node_label}")
+    
+    try:
+        # Build text search conditions
+        text_conditions = []
+        for prop in text_properties:
+            text_conditions.append(f"n.{prop} CONTAINS '{text_query}'")
+        
+        text_condition = " OR ".join(text_conditions) if text_conditions else "1=1"
+        
+        query = f"""
+        MATCH (n:{node_label})
+        WHERE {text_condition}
+        RETURN n.name as name, n.{vector_property} as vector, n.description as description
+        ORDER BY n.name
+        LIMIT {limit}
+        """
+        
+        result = execute_neo4j_query(query)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            # Format the results for display
+            formatted_results = []
+            for i, record in enumerate(result, 1):
+                # Remove vector from display for readability
+                if "vector" in record:
+                    record["vector"] = f"[{len(record['vector'])} dimensions]"
+                formatted_results.append(f"Result {i}:\n{format_neo4j_result(record)}")
+            
+            return f"✅ Hybrid Search Results ({len(result)} results):\n\n" + "\n\n".join(formatted_results)
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to perform hybrid search: {error_msg}"
+    
+    except Exception as e:
+        logger.error(f"Exception in hybrid_search: {e}")
+        return f"❌ Error performing hybrid search: {str(e)}"
+
+@mcp.tool
+def create_embedding_node(node_label: str, name: str, description: str, embedding: List[float]) -> str:
+    """Create a node with embedding for RAG operations."""
+    logger.info(f"Create embedding node tool called with label: {node_label}, name: {name}")
+    
+    try:
+        # Convert embedding to string format for Cypher
+        embedding_str = "[" + ", ".join(map(str, embedding)) + "]"
+        
+        query = f"""
+        CREATE (n:{node_label} {{
+            name: $name,
+            description: $description,
+            embedding: $embedding
+        }})
+        RETURN n
+        """
+        
+        parameters = {
+            "name": name,
+            "description": description,
+            "embedding": embedding
+        }
+        
+        result = execute_neo4j_query(query, parameters)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            return f"✅ Embedding node created successfully: {name}"
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to create embedding node: {error_msg}"
+    
+    except Exception as e:
+        logger.error(f"Exception in create_embedding_node: {e}")
+        return f"❌ Error creating embedding node: {str(e)}"
+
+@mcp.tool
+def rag_context_retrieval(query: str, node_label: str, context_properties: List[str], limit: int = 3) -> str:
+    """Retrieve relevant context for RAG operations based on text similarity."""
+    logger.info(f"RAG context retrieval tool called with query: {query}, label: {node_label}")
+    
+    try:
+        # Build context search conditions
+        context_conditions = []
+        for prop in context_properties:
+            context_conditions.append(f"n.{prop} CONTAINS '{query}'")
+        
+        context_condition = " OR ".join(context_conditions) if context_conditions else "1=1"
+        
+        # Build return properties
+        return_props = ", ".join([f"n.{prop} as {prop}" for prop in context_properties])
+        
+        query_cypher = f"""
+        MATCH (n:{node_label})
+        WHERE {context_condition}
+        RETURN {return_props}
+        ORDER BY n.name
+        LIMIT {limit}
+        """
+        
+        result = execute_neo4j_query(query_cypher)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            # Format the results for display
+            formatted_results = []
+            for i, record in enumerate(result, 1):
+                formatted_results.append(f"Context {i}:\n{format_neo4j_result(record)}")
+            
+            return f"✅ RAG Context Retrieved ({len(result)} contexts):\n\n" + "\n\n".join(formatted_results)
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to retrieve RAG context: {error_msg}"
+    
+    except Exception as e:
+        logger.error(f"Exception in rag_context_retrieval: {e}")
+        return f"❌ Error retrieving RAG context: {str(e)}"
+
 if __name__ == "__main__":
     # print("🚀 Neo4j MCP Server v2 Starting...")
     

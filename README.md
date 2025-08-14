@@ -11,6 +11,8 @@ A production-ready Model Context Protocol (MCP) server for Neo4j graph database 
 - **Data Formatting**: Properly formatted results with actual data display
 - **Environment Management**: Secure configuration via .env files
 - **Comprehensive Testing**: Full test suite with automated validation
+- **Advanced Analytics**: Graph analytics including centrality, community detection, and path analysis
+- **RAG Support**: Retrieval-Augmented Generation with vector search and semantic similarity
 
 ## 📋 Prerequisites
 
@@ -128,6 +130,24 @@ INFO:__main__:DEBUG: Connecting to Neo4j at bolt://localhost:7687 as neo4j to da
 - **`update_node(node_id: int, properties: Optional[Dict], labels: Optional[List[str]])`** - Update a node
 - **`delete_node(node_id: int, cascade: bool)`** - Delete a node
 
+### Advanced Analytics
+
+- **`graph_analytics(analysis_type: str, node_label: Optional[str], relationship_type: Optional[str])`** - Perform graph analytics
+  - `degree_centrality` - Find nodes with highest connections
+  - `betweenness_centrality` - Find nodes that act as bridges
+  - `community_detection` - Detect communities in the graph
+  - `path_analysis` - Analyze shortest paths between nodes
+  - `node_similarity` - Find similar nodes based on relationships
+- **`graph_statistics()`** - Get comprehensive graph statistics
+
+### RAG (Retrieval-Augmented Generation)
+
+- **`create_vector_index(index_name: str, node_label: str, property_name: str, dimensions: int)`** - Create vector index for semantic search
+- **`semantic_search(query_vector: List[float], index_name: str, limit: int)`** - Perform semantic search using vector similarity
+- **`hybrid_search(text_query: str, node_label: str, vector_property: str, text_properties: List[str], limit: int)`** - Combine text and vector search
+- **`create_embedding_node(node_label: str, name: str, description: str, embedding: List[float])`** - Create nodes with embeddings
+- **`rag_context_retrieval(query: str, node_label: str, context_properties: List[str], limit: int)`** - Retrieve relevant context for RAG
+
 ## 🧪 Testing
 
 ### Run Complete Test Suite
@@ -229,6 +249,38 @@ MATCH (m:Movie) RETURN m.title, m.director, m.year
 
 # Find relationships
 MATCH (m1:Movie)-[r:SIMILAR_GENRE]->(m2:Movie) RETURN m1.title, m2.title
+```
+
+### Advanced Analytics Examples
+
+```python
+# Degree centrality analysis
+mcp_neo4j-mcp-server_graph_analytics(analysis_type="degree_centrality", node_label="Movie")
+
+# Community detection
+mcp_neo4j-mcp-server_graph_analytics(analysis_type="community_detection")
+
+# Path analysis
+mcp_neo4j-mcp-server_graph_analytics(analysis_type="path_analysis", relationship_type="SIMILAR_GENRE")
+
+# Get graph statistics
+mcp_neo4j-mcp-server_graph_statistics()
+```
+
+### RAG Examples
+
+```python
+# Create vector index
+mcp_neo4j-mcp-server_create_vector_index(index_name="movie_embeddings", node_label="Movie", property_name="embedding")
+
+# Semantic search
+mcp_neo4j-mcp-server_semantic_search(query_vector=[0.1, 0.2, ...], index_name="movie_embeddings")
+
+# Hybrid search
+mcp_neo4j-mcp-server_hybrid_search(text_query="sci-fi", node_label="Movie", vector_property="embedding", text_properties=["title", "description"])
+
+# RAG context retrieval
+mcp_neo4j-mcp-server_rag_context_retrieval(query="space exploration", node_label="Movie", context_properties=["title", "description"])
 ```
 
 ## 🤝 Contributing
