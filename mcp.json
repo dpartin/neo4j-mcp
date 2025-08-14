@@ -8,7 +8,7 @@
       "command": "D:\\Users\\dpartin\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\uv.exe",
       "args": ["run", "python", "run_server.py"],
       "env": {
-        "PYTHONPATH": "${workspaceFolder}",
+        "PYTHONPATH": "E:\\Projects\\neo4j_mcp",
         "NEO4J_URI": "bolt://localhost:7687",
         "NEO4J_USER": "neo4j",
         "NEO4J_PASSWORD": "C0wb0ys1!",
@@ -16,7 +16,7 @@
         "LOG_LEVEL": "INFO",
         "DEBUG": "false"
       },
-      "cwd": "${workspaceFolder}",
+      "cwd": "E:\\Projects\\neo4j_mcp",
       "description": "Neo4j MCP Server for graph database operations, analytics, and RAG capabilities",
       "alwaysAllow": []
     }
