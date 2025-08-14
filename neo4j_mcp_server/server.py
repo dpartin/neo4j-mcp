@@ -601,6 +601,22 @@ class Neo4jMCPServer:
             logger.error("Failed to start MCP server", error=str(e))
             raise
     
+    def run_mcp_server(self):
+        """Run the MCP server for stdio communication (used by Cursor)."""
+        try:
+            logger.info("Starting Neo4j MCP Server for stdio communication")
+            
+            # For MCP stdio communication, we don't need to connect to Neo4j immediately
+            # The connection will be established when tools are called
+            logger.info("MCP server ready for stdio communication")
+            
+            # Run the FastMCP server for stdio
+            self.server.run_stdio()
+            
+        except Exception as e:
+            logger.error("Failed to start MCP server for stdio", error=str(e))
+            raise
+    
 
     
     async def stop(self):
@@ -641,5 +657,17 @@ def main_sync():
         sys.exit(1)
 
 
+def main_mcp():
+    """Main entry point for MCP stdio communication (used by Cursor)."""
+    try:
+        server = Neo4jMCPServer()
+        server.run_mcp_server()
+    except KeyboardInterrupt:
+        print("\nMCP server stopped by user")
+    except Exception as e:
+        print(f"Error running MCP server: {e}")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    main_sync()
+    main_mcp()

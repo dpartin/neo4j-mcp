@@ -10,8 +10,8 @@ import os
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from neo4j_mcp_server.server import main_sync
+from neo4j_mcp_server.server import main_mcp
 
 
 if __name__ == "__main__":
-    main_sync()
+    main_mcp()
