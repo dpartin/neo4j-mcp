@@ -1,6 +1,7 @@
 """Main MCP server for Neo4j operations."""
 
 import asyncio
+import sys
 from typing import Any, Dict, List, Optional
 from fastmcp import FastMCP
 from mcp.types import (
@@ -611,7 +612,7 @@ class Neo4jMCPServer:
             logger.info("MCP server ready for stdio communication")
             
             # Run the FastMCP server for stdio
-            self.server.run_stdio()
+            self.server.run()
             
         except Exception as e:
             logger.error("Failed to start MCP server for stdio", error=str(e))
