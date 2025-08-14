@@ -1,165 +1,233 @@
 # Neo4j MCP Server
 
-A Model Context Protocol (MCP) server for Neo4j graph database operations, built using the official MCP SDK for Python.
+A production-ready Model Context Protocol (MCP) server for Neo4j graph database operations. This server provides comprehensive tools for creating, reading, updating, and deleting nodes and relationships in Neo4j, as well as executing custom Cypher queries with full data formatting.
 
-## 🎯 Current Status
+## 🚀 Features
 
-✅ **Successfully implemented using official MCP SDK**  
-✅ **Server tested and working**  
-✅ **Configuration files updated**  
-🔄 **Ready for Cursor integration testing**
+- **CRUD Operations**: Create, read, update, and delete nodes and relationships
+- **Custom Queries**: Execute any Cypher query with parameters and formatted results
+- **Real Database Connection**: Proven connection logic with robust error handling
+- **FastMCP Implementation**: Built with FastMCP 2.0 for optimal performance
+- **Data Formatting**: Properly formatted results with actual data display
+- **Environment Management**: Secure configuration via .env files
+- **Comprehensive Testing**: Full test suite with automated validation
 
-## 🚀 Quick Start
+## 📋 Prerequisites
 
-### Prerequisites
+- Python 3.8+
+- Neo4j database running locally or remotely
+- `uv` package manager (recommended) or `pip`
 
-- Python 3.12+
-- `uv` package manager
-- Neo4j database (optional for testing)
+## 🛠️ Installation
 
-### Installation
-
-1. **Clone the repository:**
+1. **Clone the repository**:
    ```bash
    git clone <repository-url>
    cd neo4j_mcp
    ```
 
-2. **Install dependencies:**
+2. **Install dependencies**:
    ```bash
    uv sync
    ```
-
-3. **Test the server:**
+   Or with pip:
    ```bash
-   uv run python neo4j_mcp_server.py
+   pip install -r requirements.txt
    ```
 
-## 🔧 MCP Server Implementation
+3. **Setup environment**:
+   ```bash
+   cd tests
+   uv run python setup_env.py
+   ```
 
-### File: `neo4j_mcp_server.py`
+## ⚙️ Configuration
 
-This is the main MCP server implementation using the **official MCP SDK**:
+### Environment Variables
 
-- ✅ **Uses official MCP SDK** (`mcp>=1.0.0`)
-- ✅ **Proper decorator-based tool registration**
-- ✅ **Correct notification options and capabilities**
-- ✅ **Full MCP protocol compliance**
+The server uses environment variables for configuration. Create a `.env` file in the project root:
 
-### Available Tools
+```env
+# Neo4j Database Configuration
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your-password
+NEO4J_DATABASE=neo4j
 
-1. **`echo`** - Test tool that echoes back input
-   - Parameters: `message` (string)
+# Logging Configuration
+LOG_LEVEL=INFO
+DEBUG=false
 
-2. **`create_node`** - Create a new Neo4j node
-   - Parameters: 
-     - `labels`: Array of strings (required)
-     - `properties`: Object (optional)
+# MCP Server Configuration
+MCP_SERVER_NAME=neo4j-mcp-server
+```
 
-## 📋 Configuration Files
+### MCP Configuration
 
-### Project Configuration: `mcp.json`
+The `mcp.json` file is configured for Cursor integration:
+
 ```json
 {
   "mcpServers": {
     "neo4j-mcp-server": {
-      "command": "D:\\Users\\dpartin\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\uv.exe",
-      "args": ["run", "python", "neo4j_mcp_server.py"],
+      "command": "uv",
+      "args": ["run", "python", "server.py"],
       "env": {
-        "PYTHONPATH": "E:\\Projects\\neo4j_mcp"
-      },
-      "cwd": "E:\\Projects\\neo4j_mcp"
+        "PYTHONPATH": "E:\\Projects\\neo4j_mcp",
+        "NEO4J_URI": "bolt://localhost:7687",
+        "NEO4J_USER": "neo4j",
+        "NEO4J_PASSWORD": "your-password",
+        "NEO4J_DATABASE": "neo4j"
+      }
     }
   }
 }
 ```
 
-### Global Configuration: `d:\Users\dpartin\.cursor\mcp.json`
-The global Cursor configuration includes the complete MCP server setup with all required fields.
+## 🏃‍♂️ Running the Server
+
+### Start the MCP Server
+
+```bash
+uv run python server.py
+```
+
+The server will:
+- ✅ Load environment variables from .env file
+- ✅ Test Neo4j connection on startup
+- ✅ Start the MCP server with stdio transport
+- ✅ Display formatted results with actual data
+
+### Expected Output
+
+```
+Loaded environment variables from .env file
+INFO:__main__:DEBUG: Connecting to Neo4j at bolt://localhost:7687 as neo4j to database neo4j
+```
+
+## 🛠️ Available Tools
+
+### Core Operations
+
+- **`echo(message: str)`** - Echo back a message (for testing)
+- **`create_node(labels: List[str], properties: Optional[Dict])`** - Create a new node
+- **`list_nodes(label: Optional[str])`** - List nodes with formatted results
+- **`create_relationship(from_node_id: str, to_node_id: str, relationship_type: str, properties: Optional[Dict])`** - Create a relationship
+- **`execute_query(query: str, parameters: Optional[Dict])`** - Execute custom Cypher queries with formatted results
+
+### Advanced Operations
+
+- **`get_node(node_id: Optional[int], labels: Optional[List[str]], properties: Optional[Dict])`** - Get nodes by criteria
+- **`update_node(node_id: int, properties: Optional[Dict], labels: Optional[List[str]])`** - Update a node
+- **`delete_node(node_id: int, cascade: bool)`** - Delete a node
 
 ## 🧪 Testing
 
-### Manual Server Test
+### Run Complete Test Suite
+
 ```bash
-# Test initialization
-echo '{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "cursor", "version": "1.0"}}}' | uv run python neo4j_mcp_server.py
+cd tests
+uv run python test_suite.py
 ```
 
-### Expected Response
-```json
-{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"neo4j-mcp-server","version":"1.0.0"}}}
+### Run Individual Tests
+
+```bash
+# Verify MCP server functionality
+uv run python verify_mcp.py
+
+# Setup environment
+uv run python setup_env.py
 ```
 
-## 🎯 Cursor Integration
+## 📊 Test Results
 
-### Steps to Enable
+The test suite will output:
+- ✅ PASS for successful tests
+- ❌ FAIL for failed tests
+- Detailed error messages for debugging
 
-1. **Restart Cursor completely**
-2. **Open the project**: `E:\Projects\neo4j_mcp`
-3. **Go to Tools & Integrations panel**
-4. **Look for "neo4j-mcp-server"**
-5. **Try to enable it**
+## 🔧 Recent Improvements
 
-### Expected Results
+### ✅ Implemented Features
 
-- ✅ **Green dot** instead of red dot
-- ✅ **"Connected" or "Running" status**
-- ✅ **Tools available** when asking "What tools are available?"
-- ✅ **Tool calls work** through natural language
+1. **Data Formatting**: Added proper result formatting with actual data display
+2. **Environment Management**: Secure configuration via .env files with python-dotenv
+3. **Comprehensive Testing**: Full test suite with automated validation
+4. **Tool Consolidation**: All tests organized in `/tests` directory
+5. **Error Handling**: Robust error handling with real error messages
+6. **Connection Logic**: Proven connection logic with proper driver lifecycle management
 
-### Testing Tools
+### 🔄 Key Improvements
 
-Once connected, you can test:
-
-```
-"What tools are available?"
-"Create a node with labels ['Movie'] and properties {'title': 'Test Movie'}"
-"Echo the message 'Hello World'"
-```
-
-## 🔍 Troubleshooting
-
-### If Still Red Dot
-
-1. **Check Developer Console** (`Help → Toggle Developer Tools → Console`)
-2. **Look for error messages** related to MCP or neo4j-mcp-server
-3. **Verify server starts manually** with the test command above
-4. **Check Cursor version** - ensure you have the latest version
-
-### Common Issues
-
-- **Server not starting**: Check Python and `uv` installation
-- **Configuration errors**: Verify paths in `mcp.json` are correct
-- **Permission issues**: Ensure Cursor has access to the project directory
+- **Data Display**: Tools now show actual formatted data instead of just success messages
+- **Environment Setup**: Automated .env file creation and validation
+- **Test Organization**: Consolidated all tests into a structured test suite
+- **Documentation**: Updated installation and configuration instructions
 
 ## 📁 Project Structure
 
 ```
 neo4j_mcp/
-├── neo4j_mcp_server.py      # Main MCP server implementation
-├── mcp.json                 # Project MCP configuration
-├── requirements.txt         # Python dependencies
-├── README.md               # This file
-├── .vscode/                # VS Code/Cursor settings
-└── neo4j_mcp_server/       # Core Neo4j integration (future)
+├── server.py                 # Main MCP server implementation
+├── mcp.json                  # MCP configuration for Cursor
+├── requirements.txt          # Python dependencies
+├── README.md                # This documentation
+├── LICENSE                  # MIT License
+├── TRD_Neo4j_MCP_Server.md  # Technical Requirements Document
+├── tests/                   # Test suite directory
+│   ├── test_suite.py        # Comprehensive test suite
+│   ├── verify_mcp.py        # MCP server verification
+│   ├── setup_env.py         # Environment setup helper
+│   └── README.md           # Test documentation
+└── .env                     # Environment variables (created by setup)
 ```
 
-## 🔮 Next Steps
+## 🐛 Troubleshooting
 
-1. **Test Cursor integration** - Verify the red dot turns green
-2. **Add Neo4j connection** - Integrate with actual Neo4j database
-3. **Expand tools** - Add more Neo4j operations (queries, relationships, etc.)
-4. **Add error handling** - Improve robustness for production use
+### Common Issues
 
-## 📞 Support
+1. **Connection Failed**: Ensure Neo4j is running and credentials are correct
+2. **MCP Tools Not Responding**: Restart the MCP server and Cursor
+3. **Environment Variables**: Check that `.env` file exists and is configured
+4. **Test Failures**: Run the test suite to identify specific issues
 
-If you encounter issues:
+### Debug Steps
 
-1. **Check the troubleshooting section above**
-2. **Verify the server starts manually**
-3. **Check Cursor's developer console for errors**
-4. **Ensure all configuration paths are correct**
+1. **Run Test Suite**: `cd tests && uv run python test_suite.py`
+2. **Check Environment**: `cd tests && uv run python setup_env.py`
+3. **Verify MCP Server**: `cd tests && uv run python verify_mcp.py`
+4. **Check Server Logs**: Look for connection messages in server output
 
----
+## 🚀 Usage Examples
 
-**🎯 This implementation uses the official MCP SDK and should provide reliable integration with Cursor!**
+### Using with Cursor
+
+Once configured, you can use the MCP tools in Cursor:
+
+```
+mcp_neo4j-mcp-server_list_nodes
+mcp_neo4j-mcp-server_create_node
+mcp_neo4j-mcp-server_execute_query
+```
+
+### Example Queries
+
+```cypher
+# Create a movie node
+CREATE (m:Movie {title: 'Dune', director: 'Denis Villeneuve', year: 2021})
+
+# List all movies
+MATCH (m:Movie) RETURN m.title, m.director, m.year
+
+# Find relationships
+MATCH (m1:Movie)-[r:SIMILAR_GENRE]->(m2:Movie) RETURN m1.title, m2.title
+```
+
+## 🤝 Contributing
+
+This is a production-ready implementation with comprehensive testing and documentation. The project follows best practices for MCP development and Neo4j integration.
+
+## 📄 License
+
+This project is open source and available under the MIT License.

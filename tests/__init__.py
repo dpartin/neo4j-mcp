@@ -1,1 +1,1 @@
-"""Test suite for Neo4j MCP Server."""
+# Tests package for Neo4j MCP Server
