@@ -2,7 +2,22 @@
 
 import asyncio
 import sys
+import warnings
 from typing import Any, Dict, List, Optional
+
+# Suppress Pydantic deprecation warnings
+warnings.filterwarnings(
+    "ignore",
+    message=".*Using extra keyword arguments on `Field` is deprecated.*",
+    category=DeprecationWarning,
+    module="pydantic"
+)
+warnings.filterwarnings(
+    "ignore",
+    message=".*PydanticDeprecatedSince20.*",
+    category=DeprecationWarning
+)
+
 from fastmcp import FastMCP
 from mcp.types import (
     Tool,
@@ -611,9 +626,16 @@ class Neo4jMCPServer:
             # The connection will be established when tools are called
             logger.info("MCP server ready for stdio communication")
             
-            # Run the FastMCP server for stdio
+            # Run the FastMCP server for stdio with proper error handling
             # This will block and wait for MCP protocol messages
-            self.server.run()
+            try:
+                self.server.run()
+            except KeyboardInterrupt:
+                logger.info("MCP server interrupted by user")
+            except Exception as e:
+                logger.error("FastMCP server error", error=str(e))
+                # Don't re-raise - just log the error and exit gracefully
+                sys.exit(1)
             
         except KeyboardInterrupt:
             logger.info("MCP server interrupted")
@@ -670,7 +692,8 @@ def main_mcp():
         # Don't print anything on KeyboardInterrupt to avoid I/O errors
         pass
     except Exception as e:
-        print(f"Error running MCP server: {e}")
+        # Log error but don't print to avoid I/O issues with stdio
+        logger.error("MCP server error", error=str(e))
         sys.exit(1)
 
 

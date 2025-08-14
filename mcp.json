@@ -6,7 +6,7 @@
       "timeout": 60,
       "type": "stdio",
       "command": "D:\\Users\\dpartin\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\uv.exe",
-      "args": ["run", "python", "run_server.py"],
+      "args": ["run", "python", "neo4j_mcp_server.py"],
       "env": {
         "PYTHONPATH": "E:\\Projects\\neo4j_mcp",
         "NEO4J_URI": "bolt://localhost:7687",

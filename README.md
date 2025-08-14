@@ -1,401 +1,165 @@
 # Neo4j MCP Server
 
-A Model Context Protocol (MCP) server that exposes Neo4j graph database functionality to AI assistants and applications, enabling CRUD operations, advanced analytics, and RAG capabilities.
+A Model Context Protocol (MCP) server for Neo4j graph database operations, built using the official MCP SDK for Python.
 
-## Features
+## 🎯 Current Status
 
-### 🗄️ CRUD Operations
-- **Nodes**: Create, read, update, delete nodes with labels and properties
-- **Relationships**: Manage relationships between nodes
-- **Properties**: Handle node and relationship properties
+✅ **Successfully implemented using official MCP SDK**  
+✅ **Server tested and working**  
+✅ **Configuration files updated**  
+🔄 **Ready for Cursor integration testing**
 
-### 📊 Advanced Analytics
-- **Path Finding**: Shortest path, all paths, weighted paths
-- **Centrality Analysis**: Degree, betweenness, closeness centrality
-- **Community Detection**: Louvain, Label Propagation algorithms
-- **Graph Metrics**: Density, clustering coefficient, diameter
-- **Pattern Recognition**: Subgraph matching, frequent patterns
-
-### 🔍 RAG (Retrieval-Augmented Generation) Support
-- **Vector Operations**: Store and search vector embeddings
-- **Semantic Search**: Text-based graph queries
-- **Knowledge Graph Integration**: Entity linking and context retrieval
-- **Hybrid Search**: Combine graph structure with vector similarity
-
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.9+
-- Neo4j 5.x+ database
-- Neo4j Graph Data Science (GDS) library (optional, for advanced analytics)
-- Cursor IDE (for MCP integration)
+
+- Python 3.12+
+- `uv` package manager
+- Neo4j database (optional for testing)
 
 ### Installation
 
-#### Option 1: Using uv (Recommended)
-1. **Clone the repository**
+1. **Clone the repository:**
    ```bash
    git clone <repository-url>
    cd neo4j_mcp
    ```
 
-2. **Setup Git (if not already done)**
+2. **Install dependencies:**
    ```bash
-   python setup_git.py
+   uv sync
    ```
 
-3. **Setup development environment with uv**
+3. **Test the server:**
    ```bash
-   python setup_dev.py
+   uv run python neo4j_mcp_server.py
    ```
 
-4. **Activate the environment**
-   ```bash
-   # On Windows:
-   .venv\Scripts\activate
-   # On Linux/Mac:
-   source .venv/bin/activate
-   ```
+## 🔧 MCP Server Implementation
 
-5. **Configure Neo4j connection**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your Neo4j credentials
-   ```
+### File: `neo4j_mcp_server.py`
 
-6. **Run the MCP server**
-   ```bash
-   uv run python run_server.py
-   ```
+This is the main MCP server implementation using the **official MCP SDK**:
 
-7. **Integrate with Cursor (Optional)**
-   ```bash
-   # Follow the Cursor integration guide
-   # See CURSOR_INTEGRATION.md for detailed instructions
-   ```
+- ✅ **Uses official MCP SDK** (`mcp>=1.0.0`)
+- ✅ **Proper decorator-based tool registration**
+- ✅ **Correct notification options and capabilities**
+- ✅ **Full MCP protocol compliance**
 
-#### Option 2: Manual Setup
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd neo4j_mcp
-   ```
+### Available Tools
 
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+1. **`echo`** - Test tool that echoes back input
+   - Parameters: `message` (string)
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+2. **`create_node`** - Create a new Neo4j node
+   - Parameters: 
+     - `labels`: Array of strings (required)
+     - `properties`: Object (optional)
 
-4. **Configure Neo4j connection**
-   ```bash
-   cp env.example .env
-   # Edit .env with your Neo4j credentials
-   ```
+## 📋 Configuration Files
 
-5. **Run the MCP server**
-   ```bash
-   python run_server.py
-   ```
-
-### Configuration
-
-Create a `.env` file with your Neo4j configuration:
-
-```env
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=your_password
-NEO4J_DATABASE=neo4j
-
-# Optional: Vector embedding settings
-EMBEDDING_MODEL=all-MiniLM-L6-v2
-VECTOR_DIMENSION=384
-
-# Optional: OpenAI for advanced RAG
-OPENAI_API_KEY=your_openai_key
+### Project Configuration: `mcp.json`
+```json
+{
+  "mcpServers": {
+    "neo4j-mcp-server": {
+      "command": "D:\\Users\\dpartin\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\uv.exe",
+      "args": ["run", "python", "neo4j_mcp_server.py"],
+      "env": {
+        "PYTHONPATH": "E:\\Projects\\neo4j_mcp"
+      },
+      "cwd": "E:\\Projects\\neo4j_mcp"
+    }
+  }
+}
 ```
 
-## Usage Examples
+### Global Configuration: `d:\Users\dpartin\.cursor\mcp.json`
+The global Cursor configuration includes the complete MCP server setup with all required fields.
 
-### Basic CRUD Operations
+## 🧪 Testing
 
-```python
-# Create a node
-result = await create_node(
-    labels=["Person"],
-    properties={"name": "Alice", "age": 30}
-)
-
-# Get a node
-node = await get_node(node_id=123)
-
-# Create a relationship
-await create_relationship(
-    from_node_id=123,
-    to_node_id=456,
-    relationship_type="KNOWS",
-    properties={"since": "2020"}
-)
-```
-
-### Advanced Analytics
-
-```python
-# Find shortest path
-path = await find_paths(
-    start_node_id=123,
-    end_node_id=456,
-    algorithm="shortest_path"
-)
-
-# Calculate centrality
-centrality = await calculate_centrality(
-    node_ids=[123, 456, 789],
-    algorithm="betweenness"
-)
-
-# Detect communities
-communities = await detect_communities(
-    algorithm="louvain"
-)
-```
-
-### RAG Operations
-
-```python
-# Vector similarity search
-similar_nodes = await vector_search(
-    query_vector=embedding_vector,
-    top_k=10
-)
-
-# Semantic search
-results = await semantic_search(
-    query="Find people who work in technology",
-    limit=20
-)
-
-# Context retrieval for RAG
-context = await context_retrieval(
-    query="What is the relationship between Alice and Bob?",
-    max_nodes=50
-)
-```
-
-## Development
-
-### Project Structure
-
-```
-neo4j_mcp_server/
-├── server.py              # Main MCP server
-├── config/               # Configuration management
-├── core/                 # Core server functionality
-├── operations/           # CRUD operation handlers
-├── analytics/            # Graph analytics functions
-├── rag/                  # RAG functionality
-├── models/               # Data models and schemas
-├── utils/                # Utilities and helpers
-└── tests/                # Test suite
-```
-
-### Running Tests
-
-#### Using nv (Recommended)
+### Manual Server Test
 ```bash
-# Activate environment
-nv use neo4j-mcp-server
-
-# Run all tests
-nv run pytest
-
-# Run with coverage
-nv run pytest --cov=neo4j_mcp_server
-
-# Run specific test categories
-nv run pytest tests/test_crud.py
-nv run pytest tests/test_analytics.py
-nv run pytest tests/test_rag.py
+# Test initialization
+echo '{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "cursor", "version": "1.0"}}}' | uv run python neo4j_mcp_server.py
 ```
 
-#### Using standard virtual environment
-```bash
-# Activate environment
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=neo4j_mcp_server
-
-# Run specific test categories
-pytest tests/test_crud.py
-pytest tests/test_analytics.py
-pytest tests/test_rag.py
+### Expected Response
+```json
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"neo4j-mcp-server","version":"1.0.0"}}}
 ```
 
-### Code Quality
+## 🎯 Cursor Integration
 
-```bash
-# Format code
-black neo4j_mcp_server/
+### Steps to Enable
 
-# Lint code
-flake8 neo4j_mcp_server/
+1. **Restart Cursor completely**
+2. **Open the project**: `E:\Projects\neo4j_mcp`
+3. **Go to Tools & Integrations panel**
+4. **Look for "neo4j-mcp-server"**
+5. **Try to enable it**
 
-# Type checking
-mypy neo4j_mcp_server/
+### Expected Results
+
+- ✅ **Green dot** instead of red dot
+- ✅ **"Connected" or "Running" status**
+- ✅ **Tools available** when asking "What tools are available?"
+- ✅ **Tool calls work** through natural language
+
+### Testing Tools
+
+Once connected, you can test:
+
+```
+"What tools are available?"
+"Create a node with labels ['Movie'] and properties {'title': 'Test Movie'}"
+"Echo the message 'Hello World'"
 ```
 
-## API Reference
+## 🔍 Troubleshooting
 
-### Tools
+### If Still Red Dot
 
-#### Node Operations
-- `create_node` - Create new nodes with labels and properties
-- `get_node` - Retrieve nodes by ID or filters
-- `update_node` - Update node properties and labels
-- `delete_node` - Delete nodes and handle cascading
+1. **Check Developer Console** (`Help → Toggle Developer Tools → Console`)
+2. **Look for error messages** related to MCP or neo4j-mcp-server
+3. **Verify server starts manually** with the test command above
+4. **Check Cursor version** - ensure you have the latest version
 
-#### Relationship Operations
-- `create_relationship` - Create relationships between nodes
-- `get_relationship` - Retrieve relationships
-- `update_relationship` - Update relationship properties
-- `delete_relationship` - Delete relationships
+### Common Issues
 
-#### Analytics
-- `find_paths` - Find paths between nodes
-- `calculate_centrality` - Calculate node centrality metrics
-- `detect_communities` - Find community structures
-- `graph_metrics` - Calculate graph-level metrics
+- **Server not starting**: Check Python and `uv` installation
+- **Configuration errors**: Verify paths in `mcp.json` are correct
+- **Permission issues**: Ensure Cursor has access to the project directory
 
-#### RAG Operations
-- `vector_search` - Perform vector similarity search
-- `semantic_search` - Semantic graph search
-- `context_retrieval` - Retrieve relevant subgraphs for RAG
+## 📁 Project Structure
 
-### Resources
+```
+neo4j_mcp/
+├── neo4j_mcp_server.py      # Main MCP server implementation
+├── mcp.json                 # Project MCP configuration
+├── requirements.txt         # Python dependencies
+├── README.md               # This file
+├── .vscode/                # VS Code/Cursor settings
+└── neo4j_mcp_server/       # Core Neo4j integration (future)
+```
 
-- `graph_schema` - Graph database schema information
-- `node_types` - Available node labels and their properties
-- `relationship_types` - Available relationship types
-- `analytics_results` - Cached analytics results
-- `vector_indexes` - Vector index information
+## 🔮 Next Steps
 
-## Performance
+1. **Test Cursor integration** - Verify the red dot turns green
+2. **Add Neo4j connection** - Integrate with actual Neo4j database
+3. **Expand tools** - Add more Neo4j operations (queries, relationships, etc.)
+4. **Add error handling** - Improve robustness for production use
 
-### Response Times
-- **CRUD Operations**: < 100ms for simple operations
-- **Analytics**: < 5 seconds for moderate-sized graphs
-- **Vector Search**: < 2 seconds for similarity queries
-- **Complex Queries**: < 10 seconds for advanced operations
+## 📞 Support
 
-### Scalability
-- Support for graphs with millions of nodes and relationships
-- Efficient memory usage for large datasets
-- Connection pooling for concurrent requests
-- Caching for frequently accessed data
+If you encounter issues:
 
-## Cursor Integration
+1. **Check the troubleshooting section above**
+2. **Verify the server starts manually**
+3. **Check Cursor's developer console for errors**
+4. **Ensure all configuration paths are correct**
 
-The Neo4j MCP Server is designed to integrate seamlessly with Cursor IDE, providing AI-powered graph database operations directly within your development environment.
+---
 
-### Quick Cursor Setup
-
-1. **Install the MCP server** (follow installation instructions above)
-2. **Configure Cursor settings** - Add MCP server configuration to Cursor
-3. **Restart Cursor** to load the integration
-4. **Start using** - Access Neo4j operations through Cursor's AI assistant
-
-### Available Features in Cursor
-
-- **Graph Operations**: Create, query, and analyze Neo4j graphs
-- **AI-Powered Queries**: Natural language to Cypher query conversion
-- **Visual Results**: Graph visualization and data exploration
-- **Code Generation**: Generate Cypher queries and Python code
-- **RAG Integration**: Context-aware graph retrieval for AI responses
-
-For detailed setup instructions and examples, see [CURSOR_INTEGRATION.md](CURSOR_INTEGRATION.md).
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for detailed information about:
-
-- Development setup
-- Git workflow
-- Code style guidelines
-- Testing requirements
-- Pull request process
-- Issue reporting
-
-### Quick Start for Contributors
-
-1. **Fork the repository**
-2. **Clone your fork**:
-   ```bash
-   git clone https://github.com/your-username/neo4j_mcp.git
-   cd neo4j_mcp
-   ```
-
-3. **Setup development environment**:
-   ```bash
-   python setup_git.py
-   python setup_dev.py
-   ```
-
-4. **Create a feature branch**:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-5. **Make your changes and test**:
-   ```bash
-   uv run pytest tests/ -v
-   ```
-
-6. **Commit and push**:
-   ```bash
-   git add .
-   git commit -m "feat: add your feature description"
-   git push origin feature/your-feature-name
-   ```
-
-7. **Open a Pull Request**
-
-For more detailed guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-- **Documentation**: [TRD Document](TRD_Neo4j_MCP_Server.md)
-- **Issues**: [GitHub Issues](https://github.com/your-repo/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/discussions)
-
-## Roadmap
-
-See the [TRD Document](TRD_Neo4j_MCP_Server.md) for detailed development phases and roadmap.
-
-### Current Phase: Foundation (Phase 1)
-- [x] Project structure setup
-- [x] TRD documentation
-- [ ] Neo4j connection management
-- [ ] Basic MCP server framework
-- [ ] Configuration management
-- [ ] Error handling and logging
-- [ ] Unit tests framework
-
-### Next Phases
-- **Phase 2**: CRUD Operations (Weeks 3-4)
-- **Phase 3**: Advanced Analytics (Weeks 5-7)
-- **Phase 4**: RAG Integration (Weeks 8-10)
-- **Phase 5**: Advanced Features & Optimization (Weeks 11-12)
+**🎯 This implementation uses the official MCP SDK and should provide reliable integration with Cursor!**
