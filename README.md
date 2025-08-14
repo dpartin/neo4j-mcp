@@ -19,7 +19,34 @@ A production-ready Model Context Protocol (MCP) server for Neo4j graph database 
 - Python 3.8+
 - Neo4j database running locally or remotely
 - `uv` package manager (**required for MCP configuration**) or `pip` (requires manual mcp.json modification)
-- **Optional**: Neo4j Graph Data Science (GDS) library for advanced algorithms (see [GDS Installation Guide](GDS_INSTALLATION_GUIDE.md))
+- **Optional**: Neo4j Graph Data Science (GDS) library for advanced algorithms
+
+### Neo4j Deployment Options with GDS Support
+
+For advanced graph analytics features, you need Neo4j with GDS extensions. Choose one of these options:
+
+1. **Neo4j Desktop with GDS Extension** (Recommended for development)
+   - Download Neo4j Desktop from [neo4j.com/download](https://neo4j.com/download)
+   - Install the Graph Data Science library extension
+   - Start a database with GDS enabled
+
+2. **Docker Container with GDS**
+   ```bash
+   docker run \
+     --name neo4j-gds \
+     -p 7474:7474 -p 7687:7687 \
+     -e NEO4J_AUTH=neo4j/your-password \
+     -e NEO4J_PLUGINS='["graph-data-science"]' \
+     neo4j:5.15.0
+   ```
+
+3. **Neo4j Aura** (Cloud hosted)
+   - Create an Aura instance at [neo4j.com/cloud/platform/aura-graph-database](https://neo4j.com/cloud/platform/aura-graph-database)
+   - GDS is included by default in Aura Professional and Enterprise plans
+
+4. **Self-hosted Neo4j with GDS**
+   - Install Neo4j Community or Enterprise Edition
+   - Download and install the GDS library from [neo4j.com/docs/graph-data-science/current/installation](https://neo4j.com/docs/graph-data-science/current/installation)
 
 ## 🛠️ Installation
 
@@ -160,6 +187,8 @@ INFO:__main__:DEBUG: Connecting to Neo4j at bolt://localhost:7687 as neo4j to da
 - **APOC PageRank**: Uses APOC library algorithms
 - **Native Cypher**: Uses built-in Cypher queries
 - **APOC Triangle Count**: Basic clustering coefficient
+
+> **Note**: GDS requires Neo4j Desktop with GDS extension, Docker with GDS plugin, Neo4j Aura, or self-hosted Neo4j with GDS library installed.
 
 ### RAG (Retrieval-Augmented Generation)
 
