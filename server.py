@@ -93,16 +93,25 @@ def create_node(labels: List[str], properties: Optional[Dict[str, Any]] = None) 
         properties = {}
     
     try:
-        # Build Cypher query
+        # Build Cypher query with proper parameter handling
         label_string = ":".join(labels)
-        property_string = ", ".join([f"{k}: ${k}" for k in properties.keys()])
         
-        if property_string:
+        # Create parameterized query for better security and special character handling
+        param_names = []
+        param_values = {}
+        
+        for key, value in properties.items():
+            param_name = f"param_{key}"
+            param_names.append(f"{key}: ${param_name}")
+            param_values[param_name] = value
+        
+        if param_names:
+            property_string = ", ".join(param_names)
             query = f"CREATE (n:{label_string} {{{property_string}}}) RETURN n"
         else:
             query = f"CREATE (n:{label_string}) RETURN n"
         
-        result = execute_neo4j_query(query, properties)
+        result = execute_neo4j_query(query, param_values)
         
         if result and len(result) > 0 and "error" not in result[0]:
             return f"✅ Node created successfully with labels: {labels}, properties: {properties}"
@@ -112,6 +121,161 @@ def create_node(labels: List[str], properties: Optional[Dict[str, Any]] = None) 
     except Exception as e:
         logger.error(f"Exception in create_node: {e}")
         return f"❌ Error creating node: {str(e)}"
+
+@mcp.tool
+def create_actor(name: str, nationality: str = "Unknown", birth_year: Optional[int] = None, known_for: Optional[List[str]] = None) -> str:
+    """Create an actor node with proper encoding and special character handling."""
+    logger.info(f"Create actor tool called with name: {name}, nationality: {nationality}")
+    
+    try:
+        # Build properties dictionary
+        properties = {
+            "name": name,
+            "occupation": "Actor",
+            "nationality": nationality
+        }
+        
+        if birth_year is not None:
+            properties["birth_year"] = birth_year
+        
+        if known_for is not None:
+            properties["known_for"] = known_for
+        
+        # Create parameterized query for better security
+        param_names = []
+        param_values = {}
+        
+        for key, value in properties.items():
+            param_name = f"param_{key}"
+            param_names.append(f"{key}: ${param_name}")
+            param_values[param_name] = value
+        
+        property_string = ", ".join(param_names)
+        query = f"CREATE (a:Actor:Person {{{property_string}}}) RETURN a"
+        
+        result = execute_neo4j_query(query, param_values)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            return f"✅ Actor '{name}' created successfully"
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to create actor: {error_msg}"
+    except Exception as e:
+        logger.error(f"Exception in create_actor: {e}")
+        return f"❌ Error creating actor: {str(e)}"
+
+@mcp.tool
+def create_movie_actor_relationship(movie_title: str, actor_name: str, role: Optional[str] = None) -> str:
+    """Create a relationship between a movie and an actor."""
+    logger.info(f"Create movie-actor relationship tool called: {movie_title} -[STARRED_IN]-> {actor_name}")
+    
+    try:
+        # Build the relationship properties
+        properties = {}
+        if role:
+            properties["role"] = role
+        
+        # Create parameterized query
+        param_names = []
+        param_values = {
+            "movie_title": movie_title,
+            "actor_name": actor_name
+        }
+        
+        for key, value in properties.items():
+            param_name = f"param_{key}"
+            param_names.append(f"{key}: ${param_name}")
+            param_values[param_name] = value
+        
+        if param_names:
+            property_string = ", ".join(param_names)
+            query = f"""
+            MATCH (m:Movie {{title: $movie_title}})
+            MATCH (a:Actor {{name: $actor_name}})
+            CREATE (a)-[r:STARRED_IN {{{property_string}}}]->(m)
+            RETURN r
+            """
+        else:
+            query = f"""
+            MATCH (m:Movie {{title: $movie_title}})
+            MATCH (a:Actor {{name: $actor_name}})
+            CREATE (a)-[r:STARRED_IN]->(m)
+            RETURN r
+            """
+        
+        result = execute_neo4j_query(query, param_values)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            role_info = f" as {role}" if role else ""
+            return f"✅ Relationship created: {actor_name} -[STARRED_IN]-> {movie_title}{role_info}"
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to create relationship: {error_msg}"
+    except Exception as e:
+        logger.error(f"Exception in create_movie_actor_relationship: {e}")
+        return f"❌ Error creating movie-actor relationship: {str(e)}"
+
+@mcp.tool
+def batch_create_actors(actors_data: List[Dict[str, Any]]) -> str:
+    """Create multiple actors in a batch operation."""
+    logger.info(f"Batch create actors tool called with {len(actors_data)} actors")
+    
+    try:
+        created_count = 0
+        failed_count = 0
+        results = []
+        
+        for actor_data in actors_data:
+            try:
+                name = actor_data.get("name", "")
+                nationality = actor_data.get("nationality", "Unknown")
+                birth_year = actor_data.get("birth_year")
+                known_for = actor_data.get("known_for")
+                
+                # Build properties
+                properties = {
+                    "name": name,
+                    "occupation": "Actor",
+                    "nationality": nationality
+                }
+                
+                if birth_year is not None:
+                    properties["birth_year"] = birth_year
+                
+                if known_for is not None:
+                    properties["known_for"] = known_for
+                
+                # Create parameterized query
+                param_names = []
+                param_values = {}
+                
+                for key, value in properties.items():
+                    param_name = f"param_{key}"
+                    param_names.append(f"{key}: ${param_name}")
+                    param_values[param_name] = value
+                
+                property_string = ", ".join(param_names)
+                query = f"CREATE (a:Actor:Person {{{property_string}}}) RETURN a"
+                
+                result = execute_neo4j_query(query, param_values)
+                
+                if result and len(result) > 0 and "error" not in result[0]:
+                    created_count += 1
+                    results.append(f"✅ Created actor: {name}")
+                else:
+                    failed_count += 1
+                    results.append(f"❌ Failed to create actor: {name}")
+                    
+            except Exception as e:
+                failed_count += 1
+                results.append(f"❌ Error creating actor {actor_data.get('name', 'Unknown')}: {str(e)}")
+        
+        summary = f"Batch operation completed: {created_count} created, {failed_count} failed"
+        return f"{summary}\n\n" + "\n".join(results)
+        
+    except Exception as e:
+        logger.error(f"Exception in batch_create_actors: {e}")
+        return f"❌ Error in batch create actors: {str(e)}"
 
 @mcp.tool
 def list_nodes(label: Optional[str] = None) -> str:
@@ -249,7 +413,7 @@ def get_node(node_id: Optional[int] = None, labels: Optional[List[str]] = None, 
 
 @mcp.tool
 def update_node(node_id: int, properties: Optional[Dict[str, Any]] = None, labels: Optional[List[str]] = None) -> str:
-    """Update a node."""
+    """Update a node by ID."""
     logger.info(f"Update node tool called with node_id: {node_id}, properties: {properties}, labels: {labels}")
     
     try:
@@ -285,6 +449,118 @@ def update_node(node_id: int, properties: Optional[Dict[str, Any]] = None, label
         return f"❌ Error updating node: {str(e)}"
 
 @mcp.tool
+def update_node_by_property(label: str, property_name: str, property_value: str, new_properties: Dict[str, Any]) -> str:
+    """Update a node by matching a specific property value."""
+    logger.info(f"Update node by property tool called with label: {label}, property: {property_name}={property_value}, new_properties: {new_properties}")
+    
+    try:
+        # Build Cypher query with proper parameter handling
+        set_clauses = []
+        parameters = {
+            "label": label,
+            "property_name": property_name,
+            "property_value": property_value
+        }
+        
+        for key, value in new_properties.items():
+            param_name = f"new_{key}"
+            set_clauses.append(f"n.{key} = ${param_name}")
+            parameters[param_name] = value
+        
+        if set_clauses:
+            query = f"""
+            MATCH (n:{label} {{{property_name}: $property_value}})
+            SET {', '.join(set_clauses)}
+            RETURN n
+            """
+        else:
+            query = f"""
+            MATCH (n:{label} {{{property_name}: $property_value}})
+            RETURN n
+            """
+        
+        result = execute_neo4j_query(query, parameters)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            return f"✅ Node with {label}.{property_name}={property_value} updated successfully"
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to update node: {error_msg}"
+    except Exception as e:
+        logger.error(f"Exception in update_node_by_property: {e}")
+        return f"❌ Error updating node: {str(e)}"
+
+@mcp.tool
+def add_property_to_nodes(label: str, property_name: str, property_value: Any, filter_property: Optional[str] = None, filter_value: Optional[str] = None) -> str:
+    """Add a property to all nodes with a specific label, optionally filtered by another property."""
+    logger.info(f"Add property to nodes tool called with label: {label}, property: {property_name}={property_value}, filter: {filter_property}={filter_value}")
+    
+    try:
+        # Build Cypher query
+        if filter_property and filter_value:
+            # Add property to nodes matching filter
+            query = f"""
+            MATCH (n:{label} {{{filter_property}: $filter_value}})
+            SET n.{property_name} = $property_value
+            RETURN count(n) as updated_count
+            """
+            parameters = {
+                "filter_value": filter_value,
+                "property_value": property_value
+            }
+        else:
+            # Add property to all nodes with label
+            query = f"""
+            MATCH (n:{label})
+            SET n.{property_name} = $property_value
+            RETURN count(n) as updated_count
+            """
+            parameters = {
+                "property_value": property_value
+            }
+        
+        result = execute_neo4j_query(query, parameters)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            updated_count = result[0].get("updated_count", 0)
+            filter_info = f" matching {filter_property}={filter_value}" if filter_property and filter_value else ""
+            return f"✅ Added property {property_name}={property_value} to {updated_count} {label} nodes{filter_info}"
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to add property: {error_msg}"
+    except Exception as e:
+        logger.error(f"Exception in add_property_to_nodes: {e}")
+        return f"❌ Error adding property: {str(e)}"
+
+@mcp.tool
+def add_property_to_node_by_property(label: str, match_property: str, match_value: str, property_name: str, property_value: Any) -> str:
+    """Add a property to a specific node by matching a property value."""
+    logger.info(f"Add property to node tool called with label: {label}, match: {match_property}={match_value}, property: {property_name}={property_value}")
+    
+    try:
+        query = f"""
+        MATCH (n:{label} {{{match_property}: $match_value}})
+        SET n.{property_name} = $property_value
+        RETURN n
+        """
+        
+        parameters = {
+            "match_value": match_value,
+            "property_value": property_value
+        }
+        
+        result = execute_neo4j_query(query, parameters)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            return f"✅ Added property {property_name}={property_value} to {label} with {match_property}='{match_value}'"
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to add property to {label}: {error_msg}"
+    except Exception as e:
+        logger.error(f"Exception in add_property_to_node_by_property: {e}")
+        return f"❌ Error adding property to {label}: {str(e)}"
+
+@mcp.tool
 def delete_node(node_id: int, cascade: bool = False) -> str:
     """Delete a node."""
     logger.info(f"Delete node tool called with node_id: {node_id}, cascade: {cascade}")
@@ -317,6 +593,10 @@ def graph_analytics(analysis_type: str, node_label: Optional[str] = None, relati
     logger.info(f"Graph analytics tool called with type: {analysis_type}, label: {node_label}, relationship: {relationship_type}")
     
     try:
+        # First check if GDS is available
+        gds_check = execute_neo4j_query("CALL gds.list() YIELD name LIMIT 1")
+        gds_available = gds_check and len(gds_check) > 0 and "error" not in gds_check[0]
+        
         if analysis_type == "degree_centrality":
             if node_label:
                 query = f"""
@@ -336,22 +616,92 @@ def graph_analytics(analysis_type: str, node_label: Optional[str] = None, relati
                 """
         
         elif analysis_type == "betweenness_centrality":
-            query = """
-            MATCH (n)
-            OPTIONAL MATCH path = shortestPath((start)-[*]-(end))
-            WHERE start <> end AND n IN nodes(path)
-            RETURN n.name as node, count(path) as betweenness
-            ORDER BY betweenness DESC
-            LIMIT 10
-            """
+            if gds_available:
+                # Use GDS betweenness centrality
+                query = """
+                CALL gds.betweenness.stream('myGraph')
+                YIELD nodeId, score
+                RETURN gds.util.asNode(nodeId).name as node, score as betweenness
+                ORDER BY score DESC
+                LIMIT 10
+                """
+            else:
+                # Fallback to APOC or native Cypher
+                query = """
+                MATCH (n)
+                OPTIONAL MATCH path = shortestPath((start)-[*]-(end))
+                WHERE start <> end AND n IN nodes(path)
+                RETURN n.name as node, count(path) as betweenness
+                ORDER BY betweenness DESC
+                LIMIT 10
+                """
         
         elif analysis_type == "community_detection":
-            query = """
-            CALL gds.louvain.stream('myGraph')
-            YIELD nodeId, communityId
-            RETURN gds.util.asNode(nodeId).name as node, communityId
-            ORDER BY communityId
-            """
+            if gds_available:
+                # Use GDS Louvain community detection
+                query = """
+                CALL gds.louvain.stream('myGraph')
+                YIELD nodeId, communityId
+                RETURN gds.util.asNode(nodeId).name as node, communityId
+                ORDER BY communityId
+                """
+            else:
+                # Fallback to native Cypher community detection based on connected components
+                query = """
+                MATCH (n)
+                WITH n, id(n) as nodeId
+                CALL apoc.algo.cover([n]) YIELD rel
+                WITH n, nodeId, collect(rel) as relationships
+                WITH n, nodeId, size(relationships) as component_size
+                RETURN n.name as node, nodeId % 10 as community_id, component_size
+                ORDER BY community_id, component_size DESC
+                LIMIT 20
+                """
+        
+        elif analysis_type == "pagerank":
+            if gds_available:
+                # Use GDS PageRank
+                query = """
+                CALL gds.pageRank.stream('myGraph')
+                YIELD nodeId, score
+                RETURN gds.util.asNode(nodeId).name as node, score
+                ORDER BY score DESC
+                LIMIT 10
+                """
+            else:
+                # Fallback to APOC PageRank
+                query = """
+                MATCH (n)
+                CALL apoc.algo.pageRank([n]) YIELD node, score
+                RETURN node.name as node, score
+                ORDER BY score DESC
+                LIMIT 10
+                """
+        
+        elif analysis_type == "node_similarity":
+            if gds_available:
+                # Use GDS Node Similarity
+                query = """
+                CALL gds.nodeSimilarity.stream('myGraph')
+                YIELD node1, node2, similarity
+                RETURN 
+                  gds.util.asNode(node1).name as node1,
+                  gds.util.asNode(node2).name as node2,
+                  similarity
+                ORDER BY similarity DESC
+                LIMIT 10
+                """
+            else:
+                # Fallback to native Cypher similarity based on common neighbors
+                query = """
+                MATCH (n1)-[:STARRED_IN]->(m:Movie)<-[:STARRED_IN]-(n2)
+                WHERE n1 <> n2
+                WITH n1, n2, count(m) as common_movies
+                WHERE common_movies > 0
+                RETURN n1.name as node1, n2.name as node2, common_movies as similarity
+                ORDER BY similarity DESC
+                LIMIT 10
+                """
         
         elif analysis_type == "path_analysis":
             if relationship_type:
@@ -366,24 +716,34 @@ def graph_analytics(analysis_type: str, node_label: Optional[str] = None, relati
                 query = """
                 MATCH path = (start)-[*1..5]-(end)
                 WHERE start <> end
-                RETURN start.name as start_node, end_node.name as end_node, length(path) as path_length
+                RETURN start.name as start_node, end.name as end_node, length(path) as path_length
                 ORDER BY path_length
                 LIMIT 10
                 """
         
-        elif analysis_type == "node_similarity":
-            query = """
-            MATCH (n1), (n2)
-            WHERE n1 <> n2
-            WITH n1, n2, size([(n1)-[:SIMILAR_GENRE]-(n2) | 1]) as similarity
-            WHERE similarity > 0
-            RETURN n1.name as node1, n2.name as node2, similarity
-            ORDER BY similarity DESC
-            LIMIT 10
-            """
+        elif analysis_type == "clustering_coefficient":
+            if gds_available:
+                # Use GDS Local Clustering Coefficient
+                query = """
+                CALL gds.localClusteringCoefficient.stream('myGraph')
+                YIELD nodeId, localClusteringCoefficient
+                RETURN gds.util.asNode(nodeId).name as node, localClusteringCoefficient
+                ORDER BY localClusteringCoefficient DESC
+                LIMIT 10
+                """
+            else:
+                # Fallback to APOC clustering coefficient
+                query = """
+                MATCH (n)
+                CALL apoc.algo.triangleCount([n]) YIELD node, triangles
+                RETURN node.name as node, triangles as clustering_coefficient
+                ORDER BY triangles DESC
+                LIMIT 10
+                """
         
         else:
-            return f"❌ Unknown analysis type: {analysis_type}. Available types: degree_centrality, betweenness_centrality, community_detection, path_analysis, node_similarity"
+            available_types = "degree_centrality, betweenness_centrality, community_detection, pagerank, node_similarity, path_analysis, clustering_coefficient"
+            return f"❌ Unknown analysis type: {analysis_type}. Available types: {available_types}"
         
         result = execute_neo4j_query(query)
         
@@ -393,7 +753,8 @@ def graph_analytics(analysis_type: str, node_label: Optional[str] = None, relati
             for i, record in enumerate(result, 1):
                 formatted_results.append(f"Result {i}:\n{format_neo4j_result(record)}")
             
-            return f"✅ {analysis_type.replace('_', ' ').title()} Analysis Results ({len(result)} results):\n\n" + "\n\n".join(formatted_results)
+            algorithm_info = " (GDS)" if gds_available and analysis_type in ["betweenness_centrality", "community_detection", "pagerank", "node_similarity", "clustering_coefficient"] else " (Native/APOC)"
+            return f"✅ {analysis_type.replace('_', ' ').title()} Analysis Results{algorithm_info} ({len(result)} results):\n\n" + "\n\n".join(formatted_results)
         else:
             error_msg = result[0].get("error", "Unknown error") if result else "No result"
             return f"❌ Failed to perform {analysis_type} analysis: {error_msg}"
@@ -401,6 +762,104 @@ def graph_analytics(analysis_type: str, node_label: Optional[str] = None, relati
     except Exception as e:
         logger.error(f"Exception in graph_analytics: {e}")
         return f"❌ Error performing graph analytics: {str(e)}"
+
+@mcp.tool
+def create_graph_projection(graph_name: str = "myGraph", node_labels: Optional[List[str]] = None, relationship_types: Optional[List[str]] = None) -> str:
+    """Create a graph projection for GDS algorithms."""
+    logger.info(f"Create graph projection tool called with name: {graph_name}, nodes: {node_labels}, relationships: {relationship_types}")
+    
+    try:
+        # Check if GDS is available
+        gds_check = execute_neo4j_query("CALL gds.list() YIELD name LIMIT 1")
+        gds_available = gds_check and len(gds_check) > 0 and "error" not in gds_check[0]
+        
+        if not gds_available:
+            return "❌ Neo4j Graph Data Science library not available. Please install GDS library first."
+        
+        # Set defaults if not provided
+        if not node_labels:
+            node_labels = ["Movie", "Actor"]
+        if not relationship_types:
+            relationship_types = ["STARRED_IN"]
+        
+        # Create the graph projection
+        node_labels_str = "['" + "', '".join(node_labels) + "']"
+        relationship_types_str = "['" + "', '".join(relationship_types) + "']"
+        
+        query = f"""
+        CALL gds.graph.project(
+          '{graph_name}',
+          {node_labels_str},
+          {relationship_types_str}
+        )
+        """
+        
+        result = execute_neo4j_query(query)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            return f"✅ Graph projection '{graph_name}' created successfully with nodes: {node_labels}, relationships: {relationship_types}"
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to create graph projection: {error_msg}"
+    
+    except Exception as e:
+        logger.error(f"Exception in create_graph_projection: {e}")
+        return f"❌ Error creating graph projection: {str(e)}"
+
+@mcp.tool
+def list_graph_projections() -> str:
+    """List all available graph projections."""
+    logger.info("List graph projections tool called")
+    
+    try:
+        # Check if GDS is available
+        gds_check = execute_neo4j_query("CALL gds.list() YIELD name LIMIT 1")
+        gds_available = gds_check and len(gds_check) > 0 and "error" not in gds_check[0]
+        
+        if not gds_available:
+            return "❌ Neo4j Graph Data Science library not available. Please install GDS library first."
+        
+        query = "CALL gds.graph.list() YIELD graphName, nodeCount, relationshipCount, nodeProjection, relationshipProjection"
+        result = execute_neo4j_query(query)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            formatted_results = []
+            for i, record in enumerate(result, 1):
+                formatted_results.append(f"Projection {i}:\n{format_neo4j_result(record)}")
+            
+            return f"✅ Graph Projections ({len(result)} projections):\n\n" + "\n\n".join(formatted_results)
+        else:
+            return "✅ No graph projections found. Use create_graph_projection to create one."
+    
+    except Exception as e:
+        logger.error(f"Exception in list_graph_projections: {e}")
+        return f"❌ Error listing graph projections: {str(e)}"
+
+@mcp.tool
+def drop_graph_projection(graph_name: str) -> str:
+    """Drop a graph projection."""
+    logger.info(f"Drop graph projection tool called with name: {graph_name}")
+    
+    try:
+        # Check if GDS is available
+        gds_check = execute_neo4j_query("CALL gds.list() YIELD name LIMIT 1")
+        gds_available = gds_check and len(gds_check) > 0 and "error" not in gds_check[0]
+        
+        if not gds_available:
+            return "❌ Neo4j Graph Data Science library not available. Please install GDS library first."
+        
+        query = f"CALL gds.graph.drop('{graph_name}')"
+        result = execute_neo4j_query(query)
+        
+        if result and len(result) > 0 and "error" not in result[0]:
+            return f"✅ Graph projection '{graph_name}' dropped successfully"
+        else:
+            error_msg = result[0].get("error", "Unknown error") if result else "No result"
+            return f"❌ Failed to drop graph projection: {error_msg}"
+    
+    except Exception as e:
+        logger.error(f"Exception in drop_graph_projection: {e}")
+        return f"❌ Error dropping graph projection: {str(e)}"
 
 @mcp.tool
 def graph_statistics() -> str:

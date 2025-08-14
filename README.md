@@ -19,6 +19,7 @@ A production-ready Model Context Protocol (MCP) server for Neo4j graph database 
 - Python 3.8+
 - Neo4j database running locally or remotely
 - `uv` package manager (**required for MCP configuration**) or `pip` (requires manual mcp.json modification)
+- **Optional**: Neo4j Graph Data Science (GDS) library for advanced algorithms (see [GDS Installation Guide](GDS_INSTALLATION_GUIDE.md))
 
 ## 🛠️ Installation
 
@@ -38,7 +39,7 @@ A production-ready Model Context Protocol (MCP) server for Neo4j graph database 
    ```
 
 3. **Setup environment**:
-   ```bash
+     ```bash
    cd tests
    uv run python setup_env.py
    ```
@@ -134,11 +135,31 @@ INFO:__main__:DEBUG: Connecting to Neo4j at bolt://localhost:7687 as neo4j to da
 
 - **`graph_analytics(analysis_type: str, node_label: Optional[str], relationship_type: Optional[str])`** - Perform graph analytics
   - `degree_centrality` - Find nodes with highest connections
-  - `betweenness_centrality` - Find nodes that act as bridges
-  - `community_detection` - Detect communities in the graph
+  - `betweenness_centrality` - Find nodes that act as bridges (GDS or APOC)
+  - `community_detection` - Detect communities in the graph (GDS Louvain or native)
+  - `pagerank` - Measure node importance and influence (GDS or APOC)
+  - `node_similarity` - Find similar nodes based on relationships (GDS or native)
+  - `clustering_coefficient` - Measure local clustering (GDS or APOC)
   - `path_analysis` - Analyze shortest paths between nodes
-  - `node_similarity` - Find similar nodes based on relationships
 - **`graph_statistics()`** - Get comprehensive graph statistics
+
+### Graph Data Science (GDS) Support
+
+- **`create_graph_projection(graph_name: str, node_labels: Optional[List[str]], relationship_types: Optional[List[str]])`** - Create graph projections for GDS algorithms
+- **`list_graph_projections()`** - List all available graph projections
+- **`drop_graph_projection(graph_name: str)`** - Drop a graph projection
+
+**GDS Algorithms Available** (when Neo4j GDS library is installed):
+- **Louvain Community Detection**: Advanced modularity-based clustering
+- **GDS PageRank**: Optimized PageRank implementation
+- **GDS Betweenness Centrality**: Fast betweenness computation
+- **GDS Node Similarity**: Efficient similarity algorithms
+- **GDS Local Clustering Coefficient**: Advanced clustering metrics
+
+**Fallback Algorithms** (when GDS not available):
+- **APOC PageRank**: Uses APOC library algorithms
+- **Native Cypher**: Uses built-in Cypher queries
+- **APOC Triangle Count**: Basic clustering coefficient
 
 ### RAG (Retrieval-Augmented Generation)
 
@@ -184,6 +205,10 @@ The test suite will output:
 4. **Tool Consolidation**: All tests organized in `/tests` directory
 5. **Error Handling**: Robust error handling with real error messages
 6. **Connection Logic**: Proven connection logic with proper driver lifecycle management
+7. **GDS Integration**: Full Graph Data Science library support with verified functionality
+8. **Advanced Analytics**: Comprehensive graph analytics with GDS algorithms and fallbacks
+9. **MLB Database**: Complete 2025 MLB season database with teams, games, players, and box scores
+10. **Community Detection**: Working Louvain community detection with realistic team clustering
 
 ### 🔄 Key Improvements
 
@@ -257,14 +282,40 @@ MATCH (m1:Movie)-[r:SIMILAR_GENRE]->(m2:Movie) RETURN m1.title, m2.title
 # Degree centrality analysis
 mcp_neo4j-mcp-server_graph_analytics(analysis_type="degree_centrality", node_label="Movie")
 
-# Community detection
+# Community detection (GDS Louvain or native fallback)
 mcp_neo4j-mcp-server_graph_analytics(analysis_type="community_detection")
 
+# PageRank analysis (GDS or APOC fallback)
+mcp_neo4j-mcp-server_graph_analytics(analysis_type="pagerank")
+
+# Node similarity (GDS or native fallback)
+mcp_neo4j-mcp-server_graph_analytics(analysis_type="node_similarity")
+
+# Clustering coefficient (GDS or APOC fallback)
+mcp_neo4j-mcp-server_graph_analytics(analysis_type="clustering_coefficient")
+
 # Path analysis
-mcp_neo4j-mcp-server_graph_analytics(analysis_type="path_analysis", relationship_type="SIMILAR_GENRE")
+mcp_neo4j-mcp-server_graph_analytics(analysis_type="path_analysis", relationship_type="STARRED_IN")
 
 # Get graph statistics
 mcp_neo4j-mcp-server_graph_statistics()
+```
+
+### Graph Data Science (GDS) Examples
+
+```python
+# Create a graph projection for GDS algorithms
+mcp_neo4j-mcp-server_create_graph_projection(graph_name="movie_actor_graph", node_labels=["Movie", "Actor"], relationship_types=["STARRED_IN"])
+
+# List available graph projections
+mcp_neo4j-mcp-server_list_graph_projections()
+
+# Run GDS algorithms on the projection
+mcp_neo4j-mcp-server_graph_analytics(analysis_type="community_detection")  # Uses GDS Louvain
+mcp_neo4j-mcp-server_graph_analytics(analysis_type="pagerank")  # Uses GDS PageRank
+
+# Drop a graph projection when done
+mcp_neo4j-mcp-server_drop_graph_projection(graph_name="movie_actor_graph")
 ```
 
 ### RAG Examples
