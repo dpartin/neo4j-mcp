@@ -612,8 +612,11 @@ class Neo4jMCPServer:
             logger.info("MCP server ready for stdio communication")
             
             # Run the FastMCP server for stdio
+            # This will block and wait for MCP protocol messages
             self.server.run()
             
+        except KeyboardInterrupt:
+            logger.info("MCP server interrupted")
         except Exception as e:
             logger.error("Failed to start MCP server for stdio", error=str(e))
             raise
@@ -664,7 +667,8 @@ def main_mcp():
         server = Neo4jMCPServer()
         server.run_mcp_server()
     except KeyboardInterrupt:
-        print("\nMCP server stopped by user")
+        # Don't print anything on KeyboardInterrupt to avoid I/O errors
+        pass
     except Exception as e:
         print(f"Error running MCP server: {e}")
         sys.exit(1)
