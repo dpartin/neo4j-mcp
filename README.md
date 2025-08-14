@@ -16,7 +16,7 @@ A production-ready Model Context Protocol (MCP) server for Neo4j graph database 
 
 - Python 3.8+
 - Neo4j database running locally or remotely
-- `uv` package manager (recommended) or `pip`
+- `uv` package manager (**required for MCP configuration**) or `pip` (requires manual mcp.json modification)
 
 ## 🛠️ Installation
 
@@ -64,7 +64,7 @@ MCP_SERVER_NAME=neo4j-mcp-server
 
 ### MCP Configuration
 
-The `mcp.json` file is configured for Cursor integration:
+The `mcp.json` file is configured for Cursor integration using **UV** for environment and package management:
 
 ```json
 {
@@ -83,6 +83,13 @@ The `mcp.json` file is configured for Cursor integration:
   }
 }
 ```
+
+> **⚠️ Important Note**: This MCP configuration requires **UV** for environment and package management. If you're using a different package manager (conda, pip, etc.), you'll need to modify the `command` and `args` in the `mcp.json` file to work with your specific package manager.
+>
+> **Examples for other package managers:**
+> - **pip**: `"command": "python", "args": ["server.py"]`
+> - **conda**: `"command": "conda", "args": ["run", "-n", "your-env", "python", "server.py"]`
+> - **poetry**: `"command": "poetry", "args": ["run", "python", "server.py"]`
 
 ## 🏃‍♂️ Running the Server
 
